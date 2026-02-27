@@ -7,13 +7,13 @@ import { createClient } from '../../lib/matudb';
 import logo from '../../assets/logo.png';
 
 import {
-    GraduationCap, Plus, RefreshCw, Trash2, X, Search, MoreVertical, Edit2,
+    GraduationCap, Plus, RefreshCw, Trash2, X, Search,
     User, Phone, Mail, BookOpen, Hash, CheckCircle, XCircle,
     AlertTriangle, LogIn, LogOut, Camera, ImageOff,
 } from 'lucide-react';
 
 const db = createClient({
-    apiUrl: MATUDB_CONFIG.API_URL,
+    url: MATUDB_CONFIG.API_URL,
     projectId: MATUDB_CONFIG.PROJECT_ID,
     apiKey: MATUDB_CONFIG.ANON_KEY
 });
@@ -315,7 +315,7 @@ export default function MatriculaPage() {
     const [search, setSearch] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [showAuth, setShowAuth] = useState(false);
-    const [configError, setConfigError] = useState(false);
+    const [configError] = useState(false);
     const [session, setSession] = useState(getSession);
 
     const isConfigured = !MATUDB_CONFIG.PROJECT_ID.includes('PASTE');
@@ -331,8 +331,8 @@ export default function MatriculaPage() {
         load();
 
         // Subscribe to real-time updates!
-        const subscription = db.from('estudiantes')
-            .on('*', (payload) => {
+        db.from('estudiantes')
+            .on('*', (payload: any) => {
                 console.log('🔄 Real-time update received:', payload);
                 load(); // Refresh list on any change
             })
@@ -344,7 +344,7 @@ export default function MatriculaPage() {
     const handleDelete = async (id: string, nombre: string) => {
         if (!confirm(`¿Eliminar a "${nombre}" del sistema?`)) return;
         try {
-            await api.remove(id);
+            await deleteStudent(id);
             toast.success('Estudiante eliminado');
             load();
         } catch (err: any) { toast.error(err.message); }

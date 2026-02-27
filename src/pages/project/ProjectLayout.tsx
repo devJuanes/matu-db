@@ -120,7 +120,7 @@ export default function ProjectLayout() {
                             <ChevronDown size={14} color="rgba(255,255,255,0.3)" />
                         </div>
                     ) : (
-                        <div style={{ height: 58, background: 'rgba(255,255,255,0.02)', borderRadius: 12, className: 'loading-shimmer' }} />
+                        <div className="loading-shimmer" style={{ height: 58, background: 'rgba(255,255,255,0.02)', borderRadius: 12 }} />
                     )}
                 </div>
 

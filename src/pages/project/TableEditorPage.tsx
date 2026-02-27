@@ -10,15 +10,6 @@ import {
 const PG_TYPES = ['text', 'integer', 'bigint', 'float', 'boolean', 'uuid', 'timestamp', 'date', 'json', 'varchar'];
 
 // ── Helpers ────────────────────────────────────────────────
-const fmt = (val: any, colName: string) => {
-    if (val === null || val === undefined) return null;
-    // Truncate UUIDs
-    if (typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(val)) {
-        return val.slice(0, 8) + '…';
-    }
-    if (typeof val === 'object') return JSON.stringify(val);
-    return String(val);
-};
 
 const exportData = (rows: any[], format: 'csv' | 'json', tableName: string) => {
     let content: string;

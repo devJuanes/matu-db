@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Database, Code2, Terminal, ShieldCheck, Sparkles } from 'lucide-react';
+import { Code2, Terminal, ShieldCheck, Sparkles } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 interface AuthLayoutProps {

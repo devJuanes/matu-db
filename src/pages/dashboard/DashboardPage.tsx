@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { projectsAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Database, Plus, Trash2, ChevronRight, Server, LogOut, User, LayoutGrid, Search, Sparkles, Clock, Globe } from 'lucide-react';
+import { Database, Plus, Trash2, ChevronRight, Server, LogOut, Search, Sparkles, Clock, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
 

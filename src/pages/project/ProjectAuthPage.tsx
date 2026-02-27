@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useOutletContext, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import {

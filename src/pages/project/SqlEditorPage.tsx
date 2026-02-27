@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import { sqlAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Play, Clock, Database, Trash2, CornerUpLeft, Search } from 'lucide-react';
+import { Play, Clock, Database } from 'lucide-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
