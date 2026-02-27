@@ -1,0 +1,249 @@
+{
+    "landing": {
+        "nav": {
+            "product": "Producto",
+            "developers": "Desarrolladores",
+            "solutions": "Soluciones",
+            "pricing": "Precios",
+            "docs": "Documentación",
+            "blog": "Blog",
+            "sign_in": "Iniciar sesión",
+            "start_project": "Empieza tu proyecto"
+        },
+        "hero": {
+            "title_top": "Construye en un fin de semana",
+            "title_bottom": "Escala a millones",
+            "description": "MatuDB es la plataforma de desarrollo PostgreSQL. Inicia tu proyecto con una base de datos Postgres, Autenticación, APIs instantáneas, suscripciones en Real-time, Storage y embeddings de Vectores.",
+            "cta_primary": "Empieza tu proyecto",
+            "cta_secondary": "Solicita una demo"
+        },
+        "social": {
+            "trusted_by": "Con la confianza de empresas de rápido crecimiento en todo el mundo"
+        },
+        "features": {
+            "database": {
+                "title": "Base de Datos",
+                "description": "Cada proyecto de MatuDB incluye una base de datos Postgres completa."
+            },
+            "auth": {
+                "title": "Autenticación",
+                "description": "Gestión de usuarios e inicios de sesión sociales listos para usar."
+            },
+            "edge_functions": {
+                "title": "Edge Functions",
+                "description": "Funciones sin servidor que escalan automáticamente."
+            },
+            "realtime": {
+                "title": "Real-time",
+                "description": "Escucha cambios en la base de datos en tiempo real mediante WebSockets."
+            },
+            "storage": {
+                "title": "Storage",
+                "description": "Almacena y sirve grandes volúmenes de archivos multimedia."
+            },
+            "vector": {
+                "title": "Vector",
+                "description": "Almacena y busca embeddings para tus aplicaciones de IA."
+            }
+        },
+        "footer": {
+            "rights": "© MatuDB Inc. Todos los derechos reservados.",
+            "product": "Producto",
+            "resources": "Recursos",
+            "support": "Soporte",
+            "status": "Estado del sistema",
+            "tos": "Términos de servicio"
+        }
+    },
+    "sidebar": {
+        "editor": "Editor de Tablas",
+        "database": "Base de Datos",
+        "sql": "Editor SQL",
+        "storage": "Almacenamiento",
+        "auth": "Autenticación",
+        "keys": "Claves API",
+        "settings": "Configuración",
+        "all_projects": "Todos los Proyectos",
+        "sign_out": "Cerrar sesión",
+        "project": "Proyecto",
+        "active": "Activo"
+    },
+    "dashboard": {
+        "title": "Mis Proyectos",
+        "subtitle": "Selecciona un proyecto para gestionar su infraestructura",
+        "new_project": "Nuevo proyecto",
+        "projects_count": "Proyectos actuales",
+        "no_projects": "Aún no tienes proyectos",
+        "no_projects_desc": "Crea tu primer proyecto para empezar a construir con MatuDB",
+        "search_placeholder": "Buscar proyectos...",
+        "results": {
+            "none": "No se encontraron proyectos",
+            "none_desc": "No hay proyectos que coincidan con \"{{query}}\". Intenta con otro término."
+        },
+        "project_card": {
+            "created": "Creado el",
+            "status_active": "Activo",
+            "delete_tooltip": "Eliminar proyecto",
+            "delete_confirm": "¿Eliminar este proyecto? Se borrarán permanentemente todos sus datos."
+        },
+        "modal": {
+            "title": "Crear Nuevo Proyecto",
+            "name_label": "Nombre del proyecto",
+            "name_placeholder": "mi-proyecto-increible",
+            "desc_label": "Descripción",
+            "desc_placeholder": "¿De qué trata este proyecto?",
+            "btn_cancel": "Cancelar",
+            "btn_create": "Crear proyecto",
+            "btn_creating": "Creando...",
+            "success_title": "🎉 Proyecto Creado — Guarda tus Claves API",
+            "success_desc": "Estas claves solo se mostrarán una vez. Guárdalas en un lugar seguro.",
+            "anon_label": "Anon Key (pública)",
+            "service_label": "Service Role Key (secreta)",
+            "btn_saved": "He guardado mis claves"
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "Bienvenido de nuevo",
+            "subtitle": "Inicia sesión en tu cuenta",
+            "email_label": "Dirección de correo electrónico",
+            "password_label": "Contraseña",
+            "forgot_password": "¿Olvidaste tu contraseña?",
+            "submit": "Iniciar sesión",
+            "submitting": "Iniciando sesión…",
+            "no_account": "¿No tienes una cuenta?",
+            "create_account": "Registrarse",
+            "github": "Continuar con GitHub",
+            "sso": "Continuar con SSO",
+            "or": "o"
+        },
+        "register": {
+            "title": "Crea tu cuenta",
+            "subtitle": "Empieza a construir con MatuDB",
+            "name_label": "Nombre completo",
+            "email_label": "Correo electrónico",
+            "password_label": "Contraseña",
+            "confirm_password": "Confirmar contraseña",
+            "submit": "Crear cuenta",
+            "submitting": "Creando cuenta…",
+            "have_account": "¿Ya tienes una cuenta?",
+            "sign_in": "Inicia sesión",
+            "terms": "Al continuar, aceptas los Términos de servicio y la Política de privacidad de MatuDB."
+        },
+        "testimonials": {
+            "quote1": "La primera vez que ejecuté MatuDB en local, simplemente funcionó. Una experiencia de desarrollador increíble.",
+            "author1": "@gokul_i",
+            "tagline": "Construido por desarrolladores, para desarrolladores."
+        }
+    },
+    "matricula": {
+        "title": "Sistema de Matrículas",
+        "subtitle": "Universidad Nacional · Powered by MatuDB",
+        "stats": {
+            "total": "Total Estudiantes",
+            "active": "Activos",
+            "inactive": "Inactivos"
+        },
+        "actions": {
+            "new": "Nuevo Estudiante",
+            "refresh": "Actualizar",
+            "sign_in": "Iniciar sesión",
+            "sign_out": "Cerrar sesión"
+        },
+        "search_placeholder": "Buscar por nombre, cédula o correo…",
+        "form": {
+            "title": "Registrar Nuevo Estudiante",
+            "fields": {
+                "name": "Nombre completo",
+                "id": "Cédula / ID",
+                "email": "Correo electrónico",
+                "phone": "Teléfono (opcional)",
+                "age": "Edad",
+                "semester": "Semestre",
+                "semester_n": "Semestre {{n}}",
+                "career": "Carrera",
+                "career_select": "— Selecciona una carrera —",
+                "photo": "Foto del estudiante",
+                "photo_optional": "(opcional)"
+            },
+            "photo": {
+                "btn_select": "Seleccionar foto",
+                "btn_change": "Cambiar foto",
+                "remove": "Quitar",
+                "tip": "JPG, PNG, WebP · máx 5 MB · se sube a Storage"
+            },
+            "info_strip": "📡 Los datos se guardan directamente en tu base de datos PostgreSQL via MatuDB",
+            "btn_save": "Matricular Estudiante",
+            "btn_saving": "Guardando…"
+        },
+        "table": {
+            "header": {
+                "student": "Estudiante",
+                "id": "Cédula",
+                "email": "Correo",
+                "phone": "Teléfono",
+                "age": "Edad",
+                "career": "Carrera",
+                "semester": "Sem.",
+                "status": "Estado",
+                "registered": "Registro",
+                "actions": "Acciones"
+            },
+            "status": {
+                "active": "Activo",
+                "inactive": "Inactivo",
+                "activate": "Activar",
+                "deactivate": "Desactivar"
+            },
+            "actions": {
+                "delete": "Eliminar"
+            }
+        },
+        "empty": {
+            "title": "Sin estudiantes registrados",
+            "desc": "Haz clic en \"Nuevo Estudiante\" para comenzar",
+            "btn_first": "Registrar primer estudiante"
+        },
+        "results": {
+            "none": "Sin resultados",
+            "none_desc": "Intenta con otro término de búsqueda"
+        },
+        "auth": {
+            "student_access": "Acceso estudiantil",
+            "new_account": "Nueva cuenta",
+            "portal_subtitle": "Portal de Matrículas · Universidad Nacional",
+            "login_tab": "Iniciar sesión",
+            "register_tab": "Registrarse",
+            "email_label": "Correo electrónico",
+            "password_label": "Contraseña",
+            "confirm_password_label": "Confirmar",
+            "full_name_label": "Nombre completo",
+            "login_btn": "Iniciar sesión",
+            "logging_in": "Iniciando…",
+            "register_btn": "Crear cuenta",
+            "registering": "Registrando…",
+            "no_account": "¿No tienes cuenta?",
+            "register_here": "Regístrate aquí",
+            "have_account": "¿Ya tienes cuenta?",
+            "login_here": "Inicia sesión",
+            "secure_footer": "🔐 Autenticación segura · Powered by"
+        },
+        "config": {
+            "warning": "Configuración pendiente",
+            "edit_msg": "Edita {{file}} y reemplaza {{placeholder}} con el ID de tu proyecto.",
+            "sql_msg": "También ejecuta el SQL de {{file}} en el editor SQL de tu proyecto."
+        }
+    },
+    "common": {
+        "loading": "Cargando...",
+        "error": "Error",
+        "success": "Éxito",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "edit": "Editar",
+        "new": "Nuevo",
+        "logout": "Cerrar sesión",
+        "login": "Iniciar sesión"
+    }
+}
