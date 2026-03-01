@@ -27,22 +27,22 @@ export default function LoginPage() {
     return (
         <AuthLayout mode="login">
             {/* Social Logins */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {/* <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <button type="button" className="btn btn-social btn-sm" style={{ justifyContent: 'center', gap: 8 }}>
                     <Github size={16} /> GitHub
                 </button>
                 <button type="button" className="btn btn-social btn-sm" style={{ justifyContent: 'center', gap: 8 }}>
                     <Globe size={16} /> Google
                 </button>
-            </div>
+            </div> */}
 
             {/* Divider */}
-            <div style={{ position: 'relative', textAlign: 'center', margin: '12px 0' }}>
+            {/* <div style={{ position: 'relative', textAlign: 'center', margin: '12px 0' }}>
                 <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.05)' }} />
                 <span style={{ position: 'relative', background: '#040405', padding: '0 16px', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     {t('auth.login.or')}
                 </span>
-            </div>
+            </div> */}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 <div className="form-group">

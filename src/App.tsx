@@ -17,7 +17,7 @@ import DatabasePage from './pages/project/DatabasePage';
 import AppDeployPage from './pages/project/AppDeployPage';
 import MatriculaPage from './modules/matricula/MatriculaPage';
 import LandingPage from './pages/LandingPage';
-import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, DocsPage, BlogPage } from './pages/marketing/MarketingPages';
+import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, BlogPage } from './pages/marketing/MarketingPages';
 
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -76,7 +76,6 @@ export default function App() {
         <Route path="/developers" element={<DevelopersPage />} />
         <Route path="/solutions" element={<SolutionsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/docs" element={<DocsPage />} />
         <Route path="/blog" element={<BlogPage />} />
 
         {/* Auth routes */}

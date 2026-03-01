@@ -20,12 +20,11 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     }, []);
 
     const navLinks = [
-        { key: 'product', label: t('landing.nav.product'), to: '/product', hasDropdown: true },
-        { key: 'developers', label: t('landing.nav.developers'), to: '/developers', hasDropdown: true },
-        { key: 'solutions', label: t('landing.nav.solutions'), to: '/solutions', hasDropdown: true },
-        { key: 'pricing', label: t('landing.nav.pricing'), to: '/pricing' },
-        { key: 'docs', label: t('landing.nav.docs'), to: '/docs' },
-        { key: 'blog', label: t('landing.nav.blog'), to: '/blog' },
+        { key: 'product', label: t('landing.nav.product') || 'Producto', to: '/product', hasDropdown: false },
+        { key: 'developers', label: t('landing.nav.developers') || 'Desarrolladores', to: '/developers', hasDropdown: false },
+        { key: 'solutions', label: t('landing.nav.solutions') || 'Soluciones', to: '/solutions', hasDropdown: false },
+        { key: 'pricing', label: t('landing.nav.pricing') || 'Precios', to: '/pricing' },
+        { key: 'blog', label: t('landing.nav.blog') || 'Blog', to: '/blog' },
     ];
 
     return (
@@ -109,14 +108,14 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
                             style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 600 }}
                             onClick={() => navigate('/auth/login')}
                         >
-                            {t('landing.nav.sign_in')}
+                            {t('landing.nav.sign_in') || 'Iniciar Sesión'}
                         </button>
                         <button
                             className="btn btn-primary"
                             style={{ height: 44, padding: '0 24px', fontSize: 14, fontWeight: 700, borderRadius: 10 }}
                             onClick={() => navigate('/dashboard')}
                         >
-                            {t('landing.nav.start_project')}
+                            {t('landing.nav.start_project') || 'Empezar proyecto'}
                         </button>
                     </div>
                 </div>
@@ -156,9 +155,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
                         </div>
 
                         {[
-                            { title: t('landing.footer.product'), items: [t('landing.features.database.title'), t('landing.features.auth.title'), t('landing.features.storage.title')] },
-                            { title: t('landing.footer.resources'), items: [t('landing.footer.support'), t('landing.footer.status'), t('landing.footer.tos')] },
-                            { title: 'Company', items: ['About us', 'Careers', 'Contact'] }
+                            { title: t('landing.footer.product') || 'Producto', items: [t('landing.features.database.title') || 'Base de datos SQL', t('landing.features.auth.title') || 'Autenticación', t('landing.features.storage.title') || 'Almacenamiento'] },
+                            { title: t('landing.footer.resources') || 'Recursos', items: [t('landing.footer.support') || 'Soporte', t('landing.footer.status') || 'Estado', t('landing.footer.tos') || 'Términos de Servicio'] },
+                            { title: 'Compañía', items: ['Sobre nosotros', 'Carreras', 'Contacto'] }
                         ].map(col => (
                             <div key={col.title}>
                                 <h4 style={{ color: '#fff', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 24 }}>{col.title}</h4>
@@ -180,10 +179,14 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
                         color: 'rgba(255,255,255,0.4)',
                         fontSize: 13
                     }}>
-                        <div>{t('landing.footer.rights')}</div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            {t('landing.footer.rights') || '© 2024 MatuDB. Todos los derechos reservados.'}
+                            <span style={{ margin: '0 8px' }}>•</span>
+                            Powered by <a href="https://devjuanes.com" target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>DevJuanes</a>
+                        </div>
                         <div style={{ display: 'flex', gap: 24 }}>
-                            <span>Privacy Policy</span>
-                            <span>Terms of Service</span>
+                            <span>Privacidad</span>
+                            <span>Términos</span>
                         </div>
                     </div>
                 </div>

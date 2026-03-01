@@ -112,7 +112,7 @@ export default function LandingPage() {
                                 alignItems: 'center',
                                 gap: 8
                             }}>
-                            Start your project <ArrowRight size={18} />
+                            Empezar tu proyecto <ArrowRight size={18} />
                         </button>
                         <button style={{
                             backgroundColor: '#232323',
