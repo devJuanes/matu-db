@@ -152,11 +152,28 @@ export default function SqlEditorPage() {
                         </div>
                     ) : (
                         <div>
-                            <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-surface)' }}>
-                                <span className="badge badge-green">{result.command}</span>
-                                <span>{result.rowCount} fila(s) afectadas</span>
-                                <span>{result.fields?.length} columna(s)</span>
+                            {/* Execution Summary Header */}
+                            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span className="badge badge-green" style={{ textTransform: 'uppercase', fontWeight: 700 }}>{result.command || 'SELECT'}</span>
+                                    <span style={{ fontSize: 12, color: 'var(--text-main)', fontWeight: 500 }}>
+                                        {result.totalStatements > 1
+                                            ? `${result.totalStatements} comandos ejecutados`
+                                            : `${result.rowCount} fila(s) afectadas`}
+                                    </span>
+                                </div>
+
+                                {result.summary && Object.keys(result.summary).length > 0 && (
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderLeft: '1px solid var(--border)', paddingLeft: 12 }}>
+                                        {Object.entries(result.summary).map(([cmd, count]: [string, any]) => (
+                                            <span key={cmd} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--bg-main)', border: '1px solid var(--border-soft)', color: 'var(--text-secondary)' }}>
+                                                <strong style={{ color: 'var(--brand)', marginRight: 4 }}>{count}</strong> {cmd}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
+
                             {result.rows?.length > 0 && (
                                 <div className="table-wrap">
                                     <table className="table">

@@ -15,6 +15,7 @@ import StoragePage from './pages/project/StoragePage';
 import ProjectAuthPage from './pages/project/ProjectAuthPage';
 import DatabasePage from './pages/project/DatabasePage';
 import AppDeployPage from './pages/project/AppDeployPage';
+import TemplatesPage from './pages/project/TemplatesPage';
 import MatriculaPage from './modules/matricula/MatriculaPage';
 import LandingPage from './pages/LandingPage';
 import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, BlogPage } from './pages/marketing/MarketingPages';
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="auth" element={<ProjectAuthPage />} />
           <Route path="apps" element={<AppDeployPage />} />
           <Route path="keys" element={<ApiKeysPage />} />
+          <Route path="templates" element={<TemplatesPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 

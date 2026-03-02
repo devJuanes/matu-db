@@ -213,12 +213,17 @@ export default function TableEditorPage() {
     const [page, setPage] = useState(0);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [deleting, setDeleting] = useState(false);
+    const [fetchingTables, setFetchingTables] = useState(true);
     const limit = 50;
 
     const loadTables = useCallback(() => {
         if (!projectId) return;
-        tablesAPI.list(projectId).then(res => setTables(res.data.data.tables));
+        setFetchingTables(true);
+        tablesAPI.list(projectId)
+            .then(res => setTables(res.data.data.tables))
+            .finally(() => setFetchingTables(false));
     }, [projectId]);
+
 
     useEffect(() => { loadTables(); }, [loadTables]);
 
@@ -303,8 +308,13 @@ export default function TableEditorPage() {
                     <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>TABLES</span>
                     <button className="btn btn-ghost btn-icon btn-sm" title="New table" onClick={() => setShowCreate(true)}><Plus size={14} /></button>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-                    {tables.length === 0 ? (
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {fetchingTables ? (
+                        <div className="loading-spinner-wrap">
+                            <span className="spinner" />
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cargando tablas…</span>
+                        </div>
+                    ) : tables.length === 0 ? (
                         <div style={{ padding: '20px 8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
                             No tables yet.<br /><br />
                             <button className="btn btn-ghost btn-sm" onClick={() => setShowCreate(true)}><Plus size={12} />Create table</button>

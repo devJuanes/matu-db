@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import { tablesAPI } from '../../lib/api';
-import { Database, KeyRound, Hash, AlignLeft, ToggleLeft, Calendar, Braces, Activity, Radio, RefreshCw } from 'lucide-react';
+import {
+    Database, KeyRound, Hash, AlignLeft, ToggleLeft,
+    Calendar, Braces, Activity, Radio, RefreshCw, LayoutGrid, List as ListIcon
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const typeIcon = (type: string) => {
@@ -30,6 +33,7 @@ export default function DatabasePage() {
     const [realtimeMap, setRealtimeMap] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
     const [toggling, setToggling] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -87,6 +91,24 @@ export default function DatabasePage() {
                         Schema: <code style={{ fontSize: 11 }}>{project?.schema_name}</code> · {tables.length} table{tables.length !== 1 ? 's' : ''}
                     </p>
                 </div>
+                <div style={{ display: 'flex', gap: 8, background: 'var(--bg-surface)', padding: 4, borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <button
+                        className={`btn btn-sm ${viewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ padding: '6px 12px' }}
+                        onClick={() => setViewMode('grid')}
+                    >
+                        <LayoutGrid size={14} />
+                        Grid
+                    </button>
+                    <button
+                        className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ padding: '6px 12px' }}
+                        onClick={() => setViewMode('list')}
+                    >
+                        <ListIcon size={14} />
+                        List
+                    </button>
+                </div>
             </div>
 
             {tables.length === 0 ? (
@@ -95,11 +117,12 @@ export default function DatabasePage() {
                     <p className="empty-state-title">No tables yet</p>
                     <p className="empty-state-desc">Go to Table Editor to create your first table</p>
                 </div>
-            ) : (
+            ) : viewMode === 'grid' ? (
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                     gap: 20,
+                    alignItems: 'start',
                 }}>
                     {tables.map(t => {
                         const cols = details[t.name] || [];
@@ -198,6 +221,75 @@ export default function DatabasePage() {
                             </div>
                         );
                     })}
+                </div>
+            ) : (
+                <div className="card" style={{ overflow: 'hidden' }}>
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Table Name</th>
+                                <th>Columns</th>
+                                <th>PK</th>
+                                <th>FKs</th>
+                                <th>Real-time</th>
+                                <th style={{ textAlign: 'right' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tables.map(t => {
+                                const cols = details[t.name] || [];
+                                const pks = cols.filter(c => c.name === 'id');
+                                const fks = cols.filter(c => c.name.endsWith('_id') && c.name !== 'id');
+                                return (
+                                    <tr key={t.name}>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div style={{ width: 24, height: 24, background: 'var(--brand-light)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <Database size={12} color="var(--brand)" />
+                                                </div>
+                                                <span style={{ fontWeight: 600 }}>{t.name}</span>
+                                            </div>
+                                        </td>
+                                        <td><span className="badge badge-gray">{cols.length} cols</span></td>
+                                        <td>
+                                            {pks.length > 0 ? (
+                                                <span className="badge badge-green">id (UUID)</span>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>No PK</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {fks.length > 0 ? (
+                                                <span className="badge badge-yellow">{fks.length} relations</span>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>No FKs</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {realtimeMap[t.name] ? (
+                                                <span className="badge badge-green" style={{ gap: 4 }}>
+                                                    <Radio size={10} /> Enabled
+                                                </span>
+                                            ) : (
+                                                <span className="badge badge-gray">Disabled</span>
+                                            )}
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button
+                                                className="btn btn-ghost btn-sm"
+                                                onClick={() => toggleRealtime(t.name)}
+                                                disabled={toggling === t.name}
+                                                style={{ color: realtimeMap[t.name] ? 'var(--brand)' : 'var(--text-muted)' }}
+                                            >
+                                                {toggling === t.name ? <RefreshCw size={12} className="spinner" /> : <Activity size={12} />}
+                                                {realtimeMap[t.name] ? 'Deactivate' : 'Activate'} Real-time
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>

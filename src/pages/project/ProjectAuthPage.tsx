@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../../lib/api';
+import api, { authAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
 import {
     Users, Copy, CheckCircle, XCircle, Code, Trash2,
-    ShieldOff, ShieldCheck, AlertTriangle,
+    ShieldOff, ShieldCheck, AlertTriangle, Mail,
 } from 'lucide-react';
 
 export default function ProjectAuthPage() {
@@ -67,6 +67,17 @@ export default function ProjectAuthPage() {
         } finally { setActionLoading(null); }
     };
 
+    /* ── Recovery ───────────────────────────────────────────── */
+    const handleRecover = async (userId: string, email: string) => {
+        setActionLoading(userId);
+        try {
+            await authAPI.recoverUserPassword(projectId!, userId);
+            toast.success(`Correo de recuperación enviado a ${email}`);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error al enviar recuperación');
+        } finally { setActionLoading(null); }
+    };
+
     /* ── Code snippets ──────────────────────────────────────── */
     const BASE = `http://localhost:3001/api/projects/${projectId}`;
     const snippets: Record<string, string> = {
@@ -74,8 +85,13 @@ export default function ProjectAuthPage() {
 
         Login: `const res = await fetch('${BASE}/auth/login', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ email: 'user@example.com', password: 'secret123' })\n});\nconst { data } = await res.json(); // data.token`,
 
+        Recovery: `const res = await fetch('${BASE}/auth/recover', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ email: 'user@example.com' })\n});`,
+
+        Reset: `const res = await fetch('${BASE}/auth/reset', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ token: '...', password: 'new-secret-123' })\n});`,
+
         Verify: `const res = await fetch('${BASE}/auth/verify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ token: localStorage.getItem('token') })\n});\nconst { data } = await res.json(); // data.valid, data.payload`,
     };
+
     const copy = (text: string) => { navigator.clipboard.writeText(text); toast.success('Copiado'); };
 
     /* ── Derived ────────────────────────────────────────────── */
@@ -224,7 +240,19 @@ export default function ProjectAuthPage() {
                                                                     ? <span className="spinner" style={{ width: 12, height: 12 }} />
                                                                     : u.is_active ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
                                                             </button>
+                                                            {/* Password recovery */}
+                                                            <button
+                                                                title="Restablecer contraseña"
+                                                                className="btn btn-ghost btn-icon btn-sm"
+                                                                disabled={isTogglingThis}
+                                                                onClick={() => handleRecover(u.id, u.email)}
+                                                                style={{ color: 'var(--brand)' }}>
+                                                                {isTogglingThis
+                                                                    ? <span className="spinner" style={{ width: 12, height: 12 }} />
+                                                                    : <Mail size={14} />}
+                                                            </button>
                                                             {/* Delete single */}
+
                                                             <button
                                                                 title="Eliminar usuario"
                                                                 className="btn btn-ghost btn-icon btn-sm"

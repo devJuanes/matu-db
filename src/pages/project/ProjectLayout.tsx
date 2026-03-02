@@ -26,6 +26,7 @@ export default function ProjectLayout() {
         { to: 'apps', label: 'Aplicaciones', icon: Globe },
         { to: 'auth', label: t('sidebar.auth'), icon: Users },
         { to: 'keys', label: t('sidebar.keys'), icon: Key },
+        { to: 'templates', label: 'Plantillas', icon: Sparkles },
         { to: 'settings', label: t('sidebar.settings'), icon: Settings },
     ];
 

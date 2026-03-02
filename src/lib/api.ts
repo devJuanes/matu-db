@@ -32,6 +32,7 @@ export const authAPI = {
     register: (data: any) => api.post('/auth/register', data),
     login: (data: any) => api.post('/auth/login', data),
     me: () => api.get('/auth/me'),
+    recoverUserPassword: (pid: string, uid: string) => api.post(`/projects/${pid}/auth/users/${uid}/recover`),
 };
 
 // ── Projects ──────────────────────────────────────────────
@@ -80,4 +81,14 @@ export const deployAPI = {
     listApps: (pid: string) => api.get(`/projects/${pid}/apps`),
     createApp: (pid: string, data: any) => api.post(`/projects/${pid}/apps`, data),
     listDeployments: (appId: string) => api.get(`/apps/${appId}/deployments`),
+};
+
+// ── Email Templates ──────────────────────────────────────
+export const templatesAPI = {
+    list: (pid: string) => api.get(`/projects/${pid}/templates`),
+    create: (pid: string, data: any) => api.post(`/projects/${pid}/templates`, data),
+    get: (pid: string, id: string) => api.get(`/projects/${pid}/templates/${id}`),
+    update: (pid: string, id: string, data: any) => api.put(`/projects/${pid}/templates/${id}`, data),
+    delete: (pid: string, id: string) => api.delete(`/projects/${pid}/templates/${id}`),
+    send: (pid: string, data: { templateSlug: string, to: string, variables?: any }) => api.post(`/projects/${pid}/templates/send`, data),
 };
