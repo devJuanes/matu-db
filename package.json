@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@codemirror/lang-sql": "^6.10.0",
-    "@devjuanes/matuclient": "file:../matu-db-api/packages/matuclient",
+    "@devjuanes/matuclient": "^0.2.1",
     "@uiw/react-codemirror": "^4.25.5",
     "axios": "^1.13.5",
     "date-fns": "^4.1.0",
