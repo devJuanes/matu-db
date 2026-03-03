@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc -b",
-    "preview": "vite preview"
+    "preview": "vite preview --port 3005 --host"
   },
   "dependencies": {
     "@codemirror/lang-sql": "^6.10.0",

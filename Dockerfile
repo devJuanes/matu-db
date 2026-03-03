@@ -29,6 +29,6 @@ COPY --from=builder /app/dist ./dist
 
 ENV NODE_ENV=production
 
-EXPOSE 3000
+EXPOSE 3005
 
 CMD ["npm", "run", "preview"]
