@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   preview: {
     port: 3005,
+    host: true,
     allowedHosts: ["matudb.huakar.cloud"],
   },
   server: {
