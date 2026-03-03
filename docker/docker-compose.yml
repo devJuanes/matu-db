@@ -1,3 +1,5 @@
+name: matu-db
+
 services:
   app:
     build:
