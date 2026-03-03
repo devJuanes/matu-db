@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   preview: {
     port: 3005,
-    allowedHosts: true,
+    allowedHosts: ["matudb.huakar.cloud"],
   },
   server: {
     hmr: { overlay: false },
