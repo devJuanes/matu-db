@@ -10,6 +10,6 @@ export default defineConfig({
   server: {
     hmr: { overlay: false },
     port: 3005,
-    allowedHosts: ["matudb.huakar.cloud"],
+    allowedHosts: true,
   },
 })
