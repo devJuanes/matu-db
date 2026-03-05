@@ -4,7 +4,7 @@ import { tablesAPI, dataAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
 import {
     Plus, RefreshCw, Trash2, ChevronDown, X,
-    Download, CheckSquare, Square, Check,
+    Download, CheckSquare, Square, Check, Search
 } from 'lucide-react';
 
 const PG_TYPES = ['text', 'integer', 'bigint', 'float', 'boolean', 'uuid', 'timestamp', 'date', 'json', 'varchar'];
@@ -214,7 +214,14 @@ export default function TableEditorPage() {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [deleting, setDeleting] = useState(false);
     const [fetchingTables, setFetchingTables] = useState(true);
-    const limit = 50;
+    const [searchTerm, setSearchTerm] = useState('');
+    const [openTables, setOpenTables] = useState<string[]>(() => {
+        const saved = localStorage.getItem(`openTables_${projectId}`);
+        try {
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const [limit, setLimit] = useState(50);
 
     const loadTables = useCallback(() => {
         if (!projectId) return;
@@ -227,12 +234,42 @@ export default function TableEditorPage() {
 
     useEffect(() => { loadTables(); }, [loadTables]);
 
+    useEffect(() => {
+        if (!selectedTable && openTables.length > 0) {
+            selectTable(openTables[0]);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (projectId) {
+            localStorage.setItem(`openTables_${projectId}`, JSON.stringify(openTables));
+        }
+    }, [openTables, projectId]);
+
+    const closeTab = (e: React.MouseEvent, t: string) => {
+        e.stopPropagation();
+        const nextOpen = openTables.filter(tab => tab !== t);
+        setOpenTables(nextOpen);
+        if (selectedTable === t) {
+            const lastTab = nextOpen[nextOpen.length - 1];
+            setSelectedTable(lastTab || null);
+            if (!lastTab) {
+                setRows([]);
+                setColumns([]);
+                setTotal(0);
+            }
+        }
+    };
+
     const selectTable = async (t: string) => {
         setSelectedTable(t); setPage(0); setSelected(new Set()); setLoading(true);
+        if (!openTables.includes(t)) {
+            setOpenTables(prev => [...prev, t]);
+        }
         try {
             const [colsRes, rowsRes] = await Promise.all([
                 tablesAPI.get(projectId!, t),
-                dataAPI.select(projectId!, t, { limit, offset: 0 }),
+                dataAPI.select(projectId!, t, { limit, offset: 0, count: 'true' }),
             ]);
             setColumns(colsRes.data.data.columns);
             setRows(rowsRes.data.data.rows);
@@ -240,11 +277,12 @@ export default function TableEditorPage() {
         } finally { setLoading(false); }
     };
 
-    const loadPage = async (p: number) => {
+    const loadPage = async (p: number, customLimit?: number) => {
         if (!selectedTable) return;
+        const l = customLimit ?? limit;
         setPage(p); setSelected(new Set()); setLoading(true);
         try {
-            const res = await dataAPI.select(projectId!, selectedTable, { limit, offset: p * limit });
+            const res = await dataAPI.select(projectId!, selectedTable, { limit: l, offset: p * l, count: 'true' });
             setRows(res.data.data.rows); setTotal(res.data.data.total);
         } finally { setLoading(false); }
     };
@@ -298,6 +336,8 @@ export default function TableEditorPage() {
         toast.success(`Exported ${toExport.length} rows as ${format.toUpperCase()}`);
     };
 
+    const filteredTables = tables.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const hasIds = rows.some(r => r.id);
 
     return (
@@ -308,18 +348,30 @@ export default function TableEditorPage() {
                     <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>TABLES</span>
                     <button className="btn btn-ghost btn-icon btn-sm" title="New table" onClick={() => setShowCreate(true)}><Plus size={14} /></button>
                 </div>
+                <div style={{ padding: '8px 10px' }}>
+                    <div style={{ position: 'relative' }}>
+                        <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                            className="input"
+                            placeholder="Search tables..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{ paddingLeft: 28, height: 28, fontSize: 12 }}
+                        />
+                    </div>
+                </div>
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                     {fetchingTables ? (
                         <div className="loading-spinner-wrap">
                             <span className="spinner" />
                             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cargando tablas…</span>
                         </div>
-                    ) : tables.length === 0 ? (
+                    ) : filteredTables.length === 0 ? (
                         <div style={{ padding: '20px 8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-                            No tables yet.<br /><br />
-                            <button className="btn btn-ghost btn-sm" onClick={() => setShowCreate(true)}><Plus size={12} />Create table</button>
+                            {searchTerm ? 'No tables found' : 'No tables yet.'}<br /><br />
+                            {!searchTerm && <button className="btn btn-ghost btn-sm" onClick={() => setShowCreate(true)}><Plus size={12} />Create table</button>}
                         </div>
-                    ) : tables.map(t => (
+                    ) : filteredTables.map(t => (
                         <div key={t.name} onClick={() => selectTable(t.name)}
                             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', marginBottom: 2, background: selectedTable === t.name ? 'var(--brand-light)' : 'transparent', color: selectedTable === t.name ? 'var(--brand)' : 'var(--text-secondary)' }}
                             onMouseEnter={e => { if (selectedTable !== t.name) (e.currentTarget as HTMLElement).style.background = 'var(--bg-overlay)'; }}
@@ -344,6 +396,51 @@ export default function TableEditorPage() {
                     </div>
                 ) : (
                     <>
+                        {/* Tabs Bar */}
+                        <div style={{ display: 'flex', background: 'var(--bg-overlay)', borderBottom: '1px solid var(--border)', overflowX: 'auto', flexShrink: 0 }}>
+                            {openTables.map(t => (
+                                <div
+                                    key={t}
+                                    onClick={() => { if (selectedTable !== t) selectTable(t); }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        padding: '8px 16px',
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        borderRight: '1px solid var(--border)',
+                                        background: selectedTable === t ? 'var(--bg-surface)' : 'transparent',
+                                        color: selectedTable === t ? 'var(--brand)' : 'var(--text-secondary)',
+                                        borderBottom: selectedTable === t ? '2px solid var(--brand)' : '2px solid transparent',
+                                        transition: 'all 0.2s',
+                                        minWidth: 100,
+                                        maxWidth: 200
+                                    }}>
+                                    <span className="truncate" style={{ flex: 1 }}>{t}</span>
+                                    <button
+                                        onClick={(e) => closeTab(e, t)}
+                                        style={{
+                                            border: 'none',
+                                            background: 'none',
+                                            padding: 2,
+                                            borderRadius: 4,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'var(--text-muted)',
+                                            cursor: 'pointer'
+                                        }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-overlay)')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                                    >
+                                        <X size={10} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
                         {/* Toolbar */}
                         <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-surface)', flexShrink: 0, gap: 12 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -432,7 +529,27 @@ export default function TableEditorPage() {
 
                                 {/* Pagination */}
                                 <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0, background: 'var(--bg-surface)' }}>
-                                    <span>{total === 0 ? '0 rows' : `Showing ${page * limit + 1}–${Math.min((page + 1) * limit, total)} of ${total}`}</span>
+                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Rows per page:</span>
+                                            <select
+                                                className="select"
+                                                value={limit}
+                                                onChange={e => {
+                                                    const newLimit = parseInt(e.target.value);
+                                                    setLimit(newLimit);
+                                                    loadPage(0, newLimit);
+                                                }}
+                                                style={{ height: 26, fontSize: 11, padding: '0 4px', width: 65 }}
+                                            >
+                                                <option value={50}>50</option>
+                                                <option value={100}>100</option>
+                                                <option value={500}>500</option>
+                                                <option value={1000}>1000</option>
+                                            </select>
+                                        </div>
+                                        <span>{total === 0 ? '0 rows' : `Showing ${page * limit + 1}–${Math.min((page + 1) * limit, total)} of ${total}`}</span>
+                                    </div>
                                     <div style={{ display: 'flex', gap: 8 }}>
                                         <button className="btn btn-outline btn-sm" disabled={page === 0} onClick={() => loadPage(page - 1)}>← Prev</button>
                                         <button className="btn btn-outline btn-sm" disabled={(page + 1) * limit >= total} onClick={() => loadPage(page + 1)}>Next →</button>
