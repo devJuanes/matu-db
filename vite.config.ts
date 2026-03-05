@@ -5,11 +5,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   preview: {
-    port: 3005
+    port: 3005,
+    host: true,
+    allowedHosts: ["matudb.huakar.cloud"],
   },
   server: {
     hmr: { overlay: false },
     port: 3005,
-    allowedHosts: ["matudb.huakar.cloud"],
+    allowedHosts: true,
   },
 })

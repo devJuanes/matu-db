@@ -1,0 +1,13 @@
+name: matu-db
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: matu-db-app
+    restart: always
+    ports:
+      - "${APP_PORT}:3000"
+    env_file:
+      - ../.env
