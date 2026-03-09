@@ -27,6 +27,72 @@ import LandingPage from './pages/LandingPage';
 import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, BlogPage } from './pages/marketing/MarketingPages';
 import MobilePreviewPage from './pages/preview/MobilePreviewPage';
 
+function upsertMeta(selector: string, attribute: 'name' | 'property', value: string, content: string) {
+  let el = document.head.querySelector(selector) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attribute, value);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+function RouteSeo() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    let title = 'MatuDB | Backend para apps modernas';
+    let description = 'MatuDB te ayuda a lanzar bases de datos, auth, storage y APIs para aplicaciones web y mobile.';
+
+    if (path === '/') {
+      title = 'MatuDB | Plataforma de datos para construir y escalar';
+      description = 'Crea productos más rápido con base de datos, autenticación, storage y automatizaciones en una sola plataforma.';
+    } else if (path === '/product') {
+      title = 'Producto | MatuDB';
+      description = 'Conoce las capacidades de MatuDB: SQL, auth, storage, realtime y automatizaciones.';
+    } else if (path === '/developers') {
+      title = 'Desarrolladores | MatuDB';
+      description = 'APIs, ejemplos y herramientas para acelerar tu flujo de desarrollo con MatuDB.';
+    } else if (path === '/solutions') {
+      title = 'Soluciones | MatuDB';
+      description = 'Soluciones de datos para SaaS, e-commerce, portales internos y apps mobile.';
+    } else if (path === '/pricing') {
+      title = 'Precios | MatuDB';
+      description = 'Planes claros para empezar gratis y escalar cuando tu producto crezca.';
+    } else if (path === '/blog') {
+      title = 'Blog | MatuDB';
+      description = 'Guías, novedades y buenas prácticas sobre arquitectura de datos y producto.';
+    } else if (path.startsWith('/auth/login')) {
+      title = 'Iniciar sesión | MatuDB';
+      description = 'Accede a tu consola de MatuDB.';
+    } else if (path.startsWith('/auth/register')) {
+      title = 'Registro | MatuDB';
+      description = 'Crea tu cuenta y comienza a construir con MatuDB.';
+    } else if (path.startsWith('/dashboard')) {
+      title = 'Dashboard | MatuDB';
+      description = 'Administra tus proyectos y recursos desde la consola.';
+    } else if (path.startsWith('/project/')) {
+      title = 'Proyecto | Consola MatuDB';
+      description = 'Gestiona tablas, SQL, auth, storage, deploy y automatizaciones de tu proyecto.';
+    } else if (path.startsWith('/preview/mobile')) {
+      title = 'Preview mobile | MatuDB';
+      description = 'Visualiza tu app en un dispositivo simulado para validar experiencia mobile.';
+    } else if (path.startsWith('/matricula')) {
+      title = 'Matrícula | MatuDB';
+      description = 'Módulo de matrícula sobre la plataforma MatuDB.';
+    }
+
+    document.title = title;
+    upsertMeta('meta[name="description"]', 'name', 'description', description);
+    upsertMeta('meta[property="og:title"]', 'property', 'og:title', title);
+    upsertMeta('meta[property="og:description"]', 'property', 'og:description', description);
+    upsertMeta('meta[property="og:type"]', 'property', 'og:type', 'website');
+  }, [location.pathname]);
+
+  return null;
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuthStore();
   const location = useLocation();
@@ -69,6 +135,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <RouteSeo />
       <AppInit />
       <Toaster
         position="top-right"
