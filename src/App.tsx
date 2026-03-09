@@ -19,11 +19,13 @@ import DatabasePage from './pages/project/DatabasePage';
 import AppDeployPage from './pages/project/AppDeployPage';
 import TemplatesPage from './pages/project/TemplatesPage';
 import NotificationsPage from './pages/project/NotificationsPage';
+import SimulatorPage from './pages/project/SimulatorPage';
 import AutomationsList from './pages/project/automations/AutomationsList';
 import AutomationEditor from './pages/project/automations/AutomationEditor';
 import MatriculaPage from './modules/matricula/MatriculaPage';
 import LandingPage from './pages/LandingPage';
 import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, BlogPage } from './pages/marketing/MarketingPages';
+import MobilePreviewPage from './pages/preview/MobilePreviewPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuthStore();
@@ -91,6 +93,8 @@ export default function App() {
         <Route path="/solutions" element={<SolutionsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/preview/mobile" element={<MobilePreviewPage />} />
+        <Route path="/preview/mobile/:screen" element={<MobilePreviewPage />} />
         <Route path="/auth/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/auth/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -107,6 +111,7 @@ export default function App() {
           <Route path="keys" element={<ApiKeysPage />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="simulator" element={<SimulatorPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="/matricula" element={<MatriculaPage />} />

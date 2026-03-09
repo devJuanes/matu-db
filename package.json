@@ -8,17 +8,20 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc -b",
-    "preview": "vite preview --port 3005 --host"
+    "preview": "vite preview --port 3005 --host",
+    "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test tests/mobile-preview.spec.ts"
   },
   "dependencies": {
     "@codemirror/lang-sql": "^6.10.0",
-    "@devjuanes/matuclient": "^0.2.1",
+    "@devjuanes/matuclient": "^2.2.2",
     "@uiw/react-codemirror": "^4.25.5",
     "@xyflow/react": "^12.10.1",
     "axios": "^1.13.5",
     "date-fns": "^4.1.0",
     "i18next": "^25.8.13",
     "i18next-browser-languagedetector": "^8.2.1",
+    "lodash": "^4.17.23",
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -31,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.56.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
