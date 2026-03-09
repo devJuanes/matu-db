@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { automationsAPI } from '../../../lib/api';
 import toast from 'react-hot-toast';
-import { Plus, Zap, Trash2, Edit3, Settings, Play } from 'lucide-react';
+import {
+    Plus, Zap, Trash2, Edit3, Settings, Play,
+    Clock, Activity, MoreVertical, ChevronRight,
+    ArrowRight, Sparkles, Layout, ToggleLeft, ToggleRight
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -62,92 +66,182 @@ export default function AutomationsList() {
         try {
             await automationsAPI.update(projectId!, automation.id, { status: newStatus });
             setAutomations(prev => prev.map(a => a.id === automation.id ? { ...a, status: newStatus } : a));
-            toast.success(`Automatización ${newStatus === 'active' ? 'activada' : 'desactivada'}`);
+            toast.success(`Workflow ${newStatus === 'active' ? 'desplegado' : 'en pausa'}`);
         } catch {
             toast.error('Error al cambiar de estado');
         }
     };
 
     return (
-        <div style={{ padding: 32, maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ padding: '40px 32px', maxWidth: '1100px', margin: '0 auto' }}>
+            {/* Header section */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48 }}>
                 <div>
-                    <h1 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)' }}>
-                            <Zap size={20} />
-                        </div>
-                        Automatizaciones
-                    </h1>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: 14 }}>Construye flujos de trabajo visuales basados en eventos.</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--brand)', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 }}>
+                        <Zap size={14} /> Motor de Flujos
+                    </div>
+                    <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', margin: 0 }}>Automatizaciones</h1>
+                    <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontSize: 16 }}>Construye arquitecturas reactivas y flujos lógicos potentes.</p>
                 </div>
-                <button className="btn btn-primary" onClick={handleCreate} disabled={creating} style={{ gap: 8, height: 40, padding: '0 16px', borderRadius: 10 }}>
-                    {creating ? <span className="spinner" style={{ width: 16, height: 16 }} /> : <Plus size={16} />}
-                    Crear Flujo
+                <button
+                    className="btn btn-primary"
+                    onClick={handleCreate}
+                    disabled={creating}
+                    style={{
+                        gap: 10,
+                        height: 48,
+                        padding: '0 24px',
+                        borderRadius: 14,
+                        fontWeight: 700,
+                        boxShadow: '0 10px 20px rgba(16, 185, 129, 0.2)'
+                    }}
+                >
+                    {creating ? <span className="spinner-sm" style={{ width: 18, height: 18 }} /> : <Plus size={20} />}
+                    Crear Algoritmo
                 </button>
             </div>
 
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-                    <span className="spinner" style={{ width: 32, height: 32 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: 20 }}>
+                    <span className="spinner" style={{ width: 44, height: 44, borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
+                    <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>Sincronizando procesos...</span>
                 </div>
             ) : automations.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)' }}>
-                    <Zap size={48} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 16 }} />
-                    <h3 style={{ fontSize: 18, margin: '0 0 8px' }}>Sin Automatizaciones</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Comienza creando tu primer flujo de trabajo interactivo.</p>
+                <div style={{
+                    textAlign: 'center',
+                    padding: '80px 40px',
+                    background: 'var(--bg-surface)',
+                    borderRadius: 32,
+                    border: '2px dashed var(--border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 24
+                }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 28, background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <Zap size={40} style={{ opacity: 0.3 }} />
+                    </div>
+                    <div>
+                        <h3 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>El motor está inactivo</h3>
+                        <p style={{ color: 'var(--text-secondary)', maxWidth: 320, lineHeight: 1.6 }}>Crea tu primer flujo para automatizar tareas repetitivas y conectar con servicios externos.</p>
+                    </div>
+                    <button className="btn btn-outline" onClick={handleCreate} style={{ height: 40, padding: '0 24px' }}>
+                        Documentación de Flujos
+                    </button>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {automations.map(auto => (
-                        <div key={auto.id} style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '20px 24px', background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16,
-                            transition: 'all 0.2s',
-                        }} className="hover-card">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                <div style={{
-                                    width: 44, height: 44, borderRadius: 12,
-                                    background: auto.status === 'active' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: auto.status === 'active' ? '#10b981' : 'rgba(255,255,255,0.4)'
-                                }}>
-                                    {auto.status === 'active' ? <Play size={20} fill="currentColor" /> : <Settings size={20} />}
-                                </div>
-                                <div>
-                                    <h4 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 600 }}>{auto.name}</h4>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: auto.status === 'active' ? '#10b981' : '#f59e0b' }} />
-                                            {auto.status === 'active' ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                        <span>•</span>
-                                        <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: 10 }}>{auto.trigger_type}</span>
-                                        <span>•</span>
-                                        <span>Modificado hace {formatDistanceToNow(new Date(auto.updated_at), { addSuffix: true, locale: es })}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {automations.map(auto => {
+                        const isActive = auto.status === 'active';
+                        return (
+                            <div key={auto.id} style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '24px 32px', background: 'var(--bg-surface)',
+                                border: '1px solid var(--border)', borderRadius: 24,
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }} className="automation-card">
+                                {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--brand)' }} />}
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        width: 52, height: 52, borderRadius: 16,
+                                        background: isActive ? 'linear-gradient(135deg, var(--brand), #059669)' : 'var(--bg-base)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: isActive ? '#fff' : 'var(--text-muted)',
+                                        boxShadow: isActive ? '0 8px 16px rgba(16, 185, 129, 0.2)' : 'none'
+                                    }}>
+                                        {isActive ? <Activity size={24} /> : <Settings size={22} />}
+                                    </div>
+
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                                            <h4 style={{ margin: 0, fontSize: 18, fontWeight: 800, letterSpacing: '-0.3px' }}>{auto.name}</h4>
+                                            <span style={{
+                                                fontSize: 10,
+                                                fontWeight: 900,
+                                                background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-base)',
+                                                color: isActive ? 'var(--brand)' : 'var(--text-muted)',
+                                                padding: '2px 8px',
+                                                borderRadius: 6,
+                                                letterSpacing: '0.5px'
+                                            }}>
+                                                {auto.trigger_type.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <Clock size={14} />
+                                                <span>{formatDistanceToNow(new Date(auto.updated_at || Date.now()), { addSuffix: true, locale: es })}</span>
+                                            </div>
+                                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--border)' }} />
+                                            <span>v1.0.4</span>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div onClick={() => toggleStatus(auto)} style={{
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        padding: '6px 14px',
+                                        borderRadius: 12,
+                                        background: isActive ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-base)',
+                                        border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.2)' : 'var(--border)'}`,
+                                        color: isActive ? 'var(--brand)' : 'var(--text-muted)',
+                                        fontSize: 12,
+                                        fontWeight: 800,
+                                        transition: 'all 0.2s'
+                                    }}>
+                                        {isActive ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                                        {isActive ? 'EJECUTANDO' : 'DETENIDO'}
+                                    </div>
+
+                                    <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
+
+                                    <button
+                                        className="btn btn-ghost"
+                                        onClick={() => navigate(`/project/${projectId}/automations/${auto.id}`)}
+                                        style={{ width: 40, height: 40, padding: 0, justifyContent: 'center', borderRadius: 12 }}
+                                    >
+                                        <Edit3 size={18} />
+                                    </button>
+
+                                    <button
+                                        className="btn btn-ghost hover-danger"
+                                        onClick={() => handleDelete(auto.id)}
+                                        style={{ width: 40, height: 40, padding: 0, justifyContent: 'center', borderRadius: 12, color: 'var(--text-muted)' }}
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <button className="btn btn-ghost" onClick={() => toggleStatus(auto)} style={{ padding: '8px 12px', fontSize: 13, color: auto.status === 'active' ? '#f59e0b' : '#10b981' }}>
-                                    {auto.status === 'active' ? 'Pausar' : 'Activar'}
-                                </button>
-                                <button className="btn btn-secondary" onClick={() => navigate(`/project/${projectId}/automations/${auto.id}`)} style={{ width: 36, height: 36, padding: 0 }}>
-                                    <Edit3 size={16} />
-                                </button>
-                                <button className="btn btn-danger" onClick={() => handleDelete(auto.id)} style={{ width: 36, height: 36, padding: 0, background: 'transparent', border: '1px solid rgba(239,68,68,0.2)' }}>
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
+
             <style>{`
-                .hover-card:hover {
-                    background: rgba(255,255,255,0.05) !important;
-                    border-color: rgba(99, 102, 241, 0.4) !important;
+                .automation-card:hover {
+                    box-shadow: 0 12px 24px -10px rgba(0,0,0,0.1);
+                    border-color: var(--brand) !important;
                     transform: translateY(-2px);
+                }
+                .hover-danger:hover {
+                    color: var(--danger) !important;
+                    background: rgba(239, 68, 68, 0.05) !important;
+                }
+                .spinner-sm {
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-top-color: #fff;
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
                 }
             `}</style>
         </div>

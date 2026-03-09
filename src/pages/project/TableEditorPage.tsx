@@ -4,7 +4,11 @@ import { tablesAPI, dataAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
 import {
     Plus, RefreshCw, Trash2, ChevronDown, X,
-    Download, CheckSquare, Square, Check, Search
+    Download, CheckSquare, Square, Check, Search,
+    Table as TableIcon, Filter, MoreVertical, Settings2,
+    Database, Layers, Clock, FileJson, FileText, ChevronLeft, ChevronRight,
+    Info, MoreHorizontal, Settings, Box, Columns, Type, Hash as HashIcon,
+    ToggleLeft, Calendar, Braces, KeyRound, AlignLeft
 } from 'lucide-react';
 
 const PG_TYPES = ['text', 'integer', 'bigint', 'float', 'boolean', 'uuid', 'timestamp', 'date', 'json', 'varchar'];
@@ -55,60 +59,73 @@ function CreateTableModal({ projectId, onClose, onCreated }: { projectId: string
         e.preventDefault(); setLoading(true);
         try {
             await tablesAPI.create(projectId, { name, columns: cols, add_id: addId, add_timestamps: addTs });
-            toast.success(`Table "${name}" created`);
+            toast.success(`Tabla "${name}" aprovisionada`);
             onCreated();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to create table');
+            toast.error(err.response?.data?.message || 'Error al crear tabla');
             setLoading(false);
         }
     };
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
-            <div className="modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <span className="modal-title">Create new table</span>
-                    <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><X size={16} /></button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
+            <div className="card" style={{ maxWidth: 640, width: '90%', padding: 0, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+                <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)' }}>
+                            <Plus size={24} />
+                        </div>
+                        <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>Crear nueva tabla</h2>
+                    </div>
+                    <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={20} /></button>
                 </div>
                 <form onSubmit={submit}>
-                    <div className="modal-body">
+                    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: 24, maxHeight: '70vh', overflowY: 'auto' }}>
                         <div className="form-group">
-                            <label className="form-label">Table name *</label>
-                            <input className="input" placeholder="products" value={name} onChange={e => setName(e.target.value)} required />
+                            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Nombre de la Identidad</label>
+                            <input className="input" placeholder="ej. clientes o facturas" value={name} onChange={e => setName(e.target.value)} required style={{ height: 48, fontSize: 15 }} />
                         </div>
-                        <div style={{ display: 'flex', gap: 16 }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                                <input type="checkbox" checked={addId} onChange={e => setAddId(e.target.checked)} />Auto UUID id
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: '20px', background: 'var(--bg-surface)', borderRadius: 16, border: '1px solid var(--border)' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                                <input type="checkbox" checked={addId} onChange={e => setAddId(e.target.checked)} style={{ accentColor: 'var(--brand)', width: 18, height: 18, borderRadius: 4 }} />
+                                Primary Key (UUID)
                             </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                                <input type="checkbox" checked={addTs} onChange={e => setAddTs(e.target.checked)} />created_at / updated_at
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                                <input type="checkbox" checked={addTs} onChange={e => setAddTs(e.target.checked)} style={{ accentColor: 'var(--brand)', width: 18, height: 18, borderRadius: 4 }} />
+                                Timestamps (Auditoría)
                             </label>
                         </div>
+
                         <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <label className="form-label" style={{ margin: 0 }}>Columns</label>
-                                <button type="button" className="btn btn-ghost btn-sm" onClick={addCol}><Plus size={12} />Add column</button>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                <label style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Columnas Personalizadas</label>
+                                <button type="button" className="btn btn-ghost btn-sm" onClick={addCol} style={{ color: 'var(--brand)', fontWeight: 800, gap: 6 }}>
+                                    <Plus size={14} /> Añadir Atributo
+                                </button>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                 {cols.map((col, i) => (
-                                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                        <input className="input" placeholder="column_name" value={col.name} onChange={e => updateCol(i, 'name', e.target.value)} style={{ flex: 2 }} />
-                                        <select className="select" value={col.type} onChange={e => updateCol(i, 'type', e.target.value)} style={{ flex: 1 }}>
+                                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                        <input className="input" placeholder="nombre" value={col.name} onChange={e => updateCol(i, 'name', e.target.value)} style={{ flex: 2, height: 44, fontSize: 14 }} />
+                                        <select className="input" value={col.type} onChange={e => updateCol(i, 'type', e.target.value)} style={{ flex: 1.2, height: 44, padding: '0 12px', fontSize: 14 }}>
                                             {PG_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap', cursor: 'pointer' }}>
-                                            <input type="checkbox" checked={col.nullable} onChange={e => updateCol(i, 'nullable', e.target.checked)} />Nullable
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap', background: 'var(--bg-base)', padding: '0 12px', height: 44, borderRadius: 10, border: '1px solid var(--border)' }}>
+                                            <input type="checkbox" checked={col.nullable} onChange={e => updateCol(i, 'nullable', e.target.checked)} style={{ accentColor: 'var(--brand)' }} />
+                                            NULL
                                         </label>
-                                        <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={() => removeCol(i)} style={{ color: 'var(--danger)', flexShrink: 0 }}><X size={12} /></button>
+                                        <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={() => removeCol(i)} style={{ color: 'var(--danger)' }}><Trash2 size={16} /></button>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? <><span className="spinner spinner-sm" />Creating…</> : 'Create table'}
+                    <div style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 16, background: 'var(--bg-surface)' }}>
+                        <button type="button" className="btn btn-ghost" style={{ padding: '0 24px', height: 44 }} onClick={onClose}>Cancelar</button>
+                        <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding: '0 32px', height: 44, fontWeight: 700 }}>
+                            {loading ? <span className="spinner-sm" style={{ marginRight: 12 }} /> : <Database size={18} style={{ marginRight: 8 }} />}
+                            {loading ? 'Aprovisionando...' : 'Crear Tabla'}
                         </button>
                     </div>
                 </form>
@@ -130,12 +147,12 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
     const isReadOnly = col.name === 'id' || col.name === 'created_at' || col.name === 'updated_at';
 
     const display = () => {
-        if (value === null || value === undefined) return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 11 }}>null</span>;
-        if (value === true) return <span className="badge badge-green">true</span>;
-        if (value === false) return <span className="badge badge-gray">false</span>;
+        if (value === null || value === undefined) return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 11, opacity: 0.5 }}>NULL</span>;
+        if (value === true) return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>TRUE</span>;
+        if (value === false) return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>FALSE</span>;
         const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        if (isUUID) return <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{str.slice(0, 8)}…</span>;
-        return str;
+        if (isUUID) return <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.6, letterSpacing: '-0.5px' }}>{str.slice(0, 8)}…</span>;
+        return <span style={{ fontSize: 13, fontWeight: 500 }}>{str}</span>;
     };
 
     const startEdit = () => {
@@ -146,13 +163,13 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
     };
 
     const save = async () => {
+        if (draft === String(value)) { setEditing(false); return; }
         setSaving(true);
         try {
             await dataAPI.update(projectId, table, { [col.name]: draft || null }, { id: rowId });
-            toast.success('Saved');
             onSaved();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Save failed');
+            toast.error(err.response?.data?.message || 'Error al guardar');
         } finally { setSaving(false); setEditing(false); }
     };
 
@@ -163,19 +180,16 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
 
     if (editing) {
         return (
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 120, height: 38, padding: '4px' }}>
                 <input
                     ref={inputRef}
                     className="input"
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
                     onKeyDown={onKey}
-                    style={{ padding: '2px 6px', height: 26, fontSize: 12, minWidth: 80 }}
+                    onBlur={save}
+                    style={{ padding: '0 10px', height: '100%', fontSize: 13, flex: 1, border: '2px solid var(--brand)', outline: 'none', background: 'var(--bg-main)', borderRadius: 6 }}
                 />
-                <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--brand)' }} onClick={save} disabled={saving}>
-                    {saving ? <span className="spinner spinner-sm" /> : <Check size={12} />}
-                </button>
-                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setEditing(false)}><X size={11} /></button>
             </div>
         );
     }
@@ -183,15 +197,19 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
     return (
         <div
             onClick={startEdit}
-            title={isReadOnly ? undefined : 'Click to edit'}
             style={{
-                cursor: isReadOnly ? 'default' : 'pointer',
-                padding: '2px 4px',
-                borderRadius: 3,
-                minHeight: 20,
-                transition: 'background .15s',
+                cursor: isReadOnly ? 'default' : 'text',
+                padding: '0 16px',
+                height: 48,
+                transition: 'all 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                borderRight: '1px solid var(--border-soft)'
             }}
-            onMouseEnter={e => { if (!isReadOnly) (e.currentTarget as HTMLElement).style.background = 'var(--bg-overlay)'; }}
+            onMouseEnter={e => { if (!isReadOnly) (e.currentTarget as HTMLElement).style.background = 'rgba(16, 185, 129, 0.03)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
             {display()}
@@ -202,7 +220,7 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
 // ── Main Page ──────────────────────────────────────────────
 export default function TableEditorPage() {
     const { projectId } = useParams<{ projectId: string }>();
-    const { project: _p } = useOutletContext<any>();
+    const { project } = useOutletContext<any>();
     const [tables, setTables] = useState<any[]>([]);
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [columns, setColumns] = useState<any[]>([]);
@@ -215,6 +233,8 @@ export default function TableEditorPage() {
     const [deleting, setDeleting] = useState(false);
     const [fetchingTables, setFetchingTables] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterCol, setFilterCol] = useState('');
+    const [filterVal, setFilterVal] = useState('');
     const [openTables, setOpenTables] = useState<string[]>(() => {
         const saved = localStorage.getItem(`openTables_${projectId}`);
         try {
@@ -230,7 +250,6 @@ export default function TableEditorPage() {
             .then(res => setTables(res.data.data.tables))
             .finally(() => setFetchingTables(false));
     }, [projectId]);
-
 
     useEffect(() => { loadTables(); }, [loadTables]);
 
@@ -252,8 +271,9 @@ export default function TableEditorPage() {
         setOpenTables(nextOpen);
         if (selectedTable === t) {
             const lastTab = nextOpen[nextOpen.length - 1];
-            setSelectedTable(lastTab || null);
-            if (!lastTab) {
+            if (lastTab) selectTable(lastTab);
+            else {
+                setSelectedTable(null);
                 setRows([]);
                 setColumns([]);
                 setTotal(0);
@@ -267,13 +287,23 @@ export default function TableEditorPage() {
             setOpenTables(prev => [...prev, t]);
         }
         try {
-            const [colsRes, rowsRes] = await Promise.all([
-                tablesAPI.get(projectId!, t),
-                dataAPI.select(projectId!, t, { limit, offset: 0, count: 'true' }),
-            ]);
-            setColumns(colsRes.data.data.columns);
+            const colsRes = await tablesAPI.get(projectId!, t);
+            const columnsData = colsRes.data.data.columns;
+
+            const hasIdCol = columnsData.some((c: any) => c.name === 'id');
+            const params: any = { limit, offset: 0, count: 'true' };
+            if (hasIdCol) params.order = 'id.asc';
+
+            if (filterCol && filterVal) {
+                params[filterCol] = `ilike.%${filterVal}%`;
+            }
+
+            const rowsRes = await dataAPI.select(projectId!, t, params);
+            setColumns(columnsData);
             setRows(rowsRes.data.data.rows);
             setTotal(rowsRes.data.data.total);
+        } catch (err) {
+            toast.error('Error al cargar datos');
         } finally { setLoading(false); }
     };
 
@@ -282,19 +312,29 @@ export default function TableEditorPage() {
         const l = customLimit ?? limit;
         setPage(p); setSelected(new Set()); setLoading(true);
         try {
-            const res = await dataAPI.select(projectId!, selectedTable, { limit: l, offset: p * l, count: 'true' });
+            const hasIdCol = columns.some((c: any) => c.name === 'id');
+            const params: any = { limit: l, offset: p * l, count: 'true' };
+            if (hasIdCol) params.order = 'id.asc';
+
+            if (filterCol && filterVal) {
+                params[filterCol] = `ilike.%${filterVal}%`;
+            }
+            const res = await dataAPI.select(projectId!, selectedTable, params);
             setRows(res.data.data.rows); setTotal(res.data.data.total);
         } finally { setLoading(false); }
     };
 
-    const dropTable = async (t: string) => {
-        if (!confirm(`Drop table "${t}"? All data will be lost.`)) return;
+    const dropTable = async (t: string, e: React.MouseEvent) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!confirm(`¿Eliminar tabla "${t}" permanentemente?`)) return;
         try {
             await tablesAPI.drop(projectId!, t);
-            toast.success(`Table "${t}" dropped`);
-            if (selectedTable === t) { setSelectedTable(null); setRows([]); setColumns([]); }
+            toast.success(`Tabla eliminada`);
+            const nextOpen = openTables.filter(tab => tab !== t);
+            setOpenTables(nextOpen);
+            if (selectedTable === t) setSelectedTable(nextOpen[0] || null);
             loadTables();
-        } catch (err: any) { toast.error(err.response?.data?.message || 'Failed'); }
+        } catch (err: any) { toast.error('Error al eliminar'); }
     };
 
     // Selection
@@ -304,7 +344,8 @@ export default function TableEditorPage() {
         if (allSelected) setSelected(new Set());
         else setSelected(new Set(allIds));
     };
-    const toggleRow = (id: string) => {
+    const toggleRow = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
         setSelected(prev => {
             const next = new Set(prev);
             next.has(id) ? next.delete(id) : next.add(id);
@@ -313,17 +354,17 @@ export default function TableEditorPage() {
     };
 
     const deleteSelected = async () => {
-        if (!confirm(`Delete ${selected.size} row(s)?`)) return;
+        if (!confirm(`¿Eliminar ${selected.size} registro(s)?`)) return;
         setDeleting(true);
         try {
             for (const id of selected) {
                 await dataAPI.delete(projectId!, selectedTable!, { id });
             }
-            toast.success(`${selected.size} row(s) deleted`);
+            toast.success(`Registros eliminados`);
             setSelected(new Set());
             await selectTable(selectedTable!);
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Delete failed');
+            toast.error('Error en eliminación masiva');
         } finally { setDeleting(false); }
     };
 
@@ -331,237 +372,353 @@ export default function TableEditorPage() {
         const toExport = selected.size > 0
             ? rows.filter(r => selected.has(r.id))
             : rows;
-        if (toExport.length === 0) { toast.error('No rows to export'); return; }
+        if (toExport.length === 0) { toast.error('Sin datos para procesar'); return; }
         exportData(toExport, format, selectedTable!);
-        toast.success(`Exported ${toExport.length} rows as ${format.toUpperCase()}`);
+        toast.success(`Despachado en formato ${format.toUpperCase()}`);
     };
 
     const filteredTables = tables.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
     const hasIds = rows.some(r => r.id);
 
     return (
-        <div style={{ display: 'flex', height: '100%' }}>
-            {/* Table sidebar */}
-            <div style={{ width: 220, borderRight: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-                <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>TABLES</span>
-                    <button className="btn btn-ghost btn-icon btn-sm" title="New table" onClick={() => setShowCreate(true)}><Plus size={14} /></button>
+        <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: 'var(--bg-main)' }}>
+            {/* Nav Sidebar - Table Map */}
+            <div style={{ width: 260, borderRight: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                <div style={{ padding: '24px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-primary)', fontWeight: 800, fontSize: 13, letterSpacing: '0.5px' }}>
+                        <Database size={18} color="var(--brand)" /> ESQUEMA
+                    </div>
+                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setShowCreate(true)} style={{ color: 'var(--brand)' }}>
+                        <Plus size={20} />
+                    </button>
                 </div>
-                <div style={{ padding: '8px 10px' }}>
+
+                <div style={{ padding: '16px 12px' }}>
                     <div style={{ position: 'relative' }}>
-                        <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input
                             className="input"
-                            placeholder="Search tables..."
+                            placeholder="Buscar tabla..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            style={{ paddingLeft: 28, height: 28, fontSize: 12 }}
+                            style={{ paddingLeft: 36, height: 40, fontSize: 13, background: 'var(--bg-main)' }}
                         />
                     </div>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto' }}>
+
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 24px' }}>
                     {fetchingTables ? (
-                        <div className="loading-spinner-wrap">
-                            <span className="spinner" />
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cargando tablas…</span>
+                        <div style={{ padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                            <span className="spinner" style={{ width: 24, height: 24, borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
                         </div>
                     ) : filteredTables.length === 0 ? (
-                        <div style={{ padding: '20px 8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-                            {searchTerm ? 'No tables found' : 'No tables yet.'}<br /><br />
-                            {!searchTerm && <button className="btn btn-ghost btn-sm" onClick={() => setShowCreate(true)}><Plus size={12} />Create table</button>}
+                        <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+                            Sin resultados.
                         </div>
-                    ) : filteredTables.map(t => (
-                        <div key={t.name} onClick={() => selectTable(t.name)}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', marginBottom: 2, background: selectedTable === t.name ? 'var(--brand-light)' : 'transparent', color: selectedTable === t.name ? 'var(--brand)' : 'var(--text-secondary)' }}
-                            onMouseEnter={e => { if (selectedTable !== t.name) (e.currentTarget as HTMLElement).style.background = 'var(--bg-overlay)'; }}
-                            onMouseLeave={e => { if (selectedTable !== t.name) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
-                            <span style={{ fontSize: 13, fontWeight: 500 }} className="truncate">{t.name}</span>
-                            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
-                                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{t.column_count} cols</span>
-                                <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--text-muted)', padding: 2 }} onClick={e => { e.stopPropagation(); dropTable(t.name); }}><Trash2 size={11} /></button>
-                            </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {filteredTables.map(t => (
+                                <div
+                                    key={t.name}
+                                    onClick={() => selectTable(t.name)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                                        background: selectedTable === t.name ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                                        color: selectedTable === t.name ? 'var(--brand)' : 'var(--text-secondary)',
+                                        transition: 'all 0.15s',
+                                        position: 'relative'
+                                    }}
+                                    className="table-item"
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                                        <div style={{ width: 24, height: 24, borderRadius: 6, background: selectedTable === t.name ? 'var(--brand)' : 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedTable === t.name ? '#fff' : 'var(--text-muted)', transition: 'all 0.2s' }}>
+                                            <TableIcon size={12} />
+                                        </div>
+                                        <span style={{ fontSize: 13, fontWeight: selectedTable === t.name ? 800 : 500 }} className="truncate">{t.name}</span>
+                                    </div>
+                                    <div className="table-actions" style={{ opacity: 0, transition: 'opacity 0.2s' }}>
+                                        <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={e => dropTable(t.name, e)}>
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
 
-            {/* Data grid */}
+            {/* Content Explorer */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 {!selectedTable ? (
-                    <div className="empty-state" style={{ height: '100%' }}>
-                        <div className="empty-state-icon"><ChevronDown size={40} /></div>
-                        <p className="empty-state-title">Select a table</p>
-                        <p className="empty-state-desc">Or create a new one to get started</p>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg-base)' }}>
+                        <div style={{ width: 120, height: 120, borderRadius: 40, background: 'var(--bg-surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+                            <Layers size={56} style={{ opacity: 0.2 }} />
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, letterSpacing: '-0.5px' }}>Explorador de Datos</h2>
+                            <p style={{ color: 'var(--text-secondary)', maxWidth: 360, fontSize: 15, lineHeight: 1.6 }}>
+                                Selecciona una tabla del esquema o aprovisiona una nueva para comenzar a gestionar tus registros.
+                            </p>
+                        </div>
+                        <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ height: 48, padding: '0 32px', fontWeight: 700 }}>
+                            <Plus size={20} /> Nueva Identidad
+                        </button>
                     </div>
                 ) : (
                     <>
-                        {/* Tabs Bar */}
-                        <div style={{ display: 'flex', background: 'var(--bg-overlay)', borderBottom: '1px solid var(--border)', overflowX: 'auto', flexShrink: 0 }}>
+                        {/* Tab Navigation Systems */}
+                        <div style={{ display: 'flex', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)', overflowX: 'auto', flexShrink: 0 }}>
                             {openTables.map(t => (
                                 <div
                                     key={t}
                                     onClick={() => { if (selectedTable !== t) selectTable(t); }}
                                     style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 8,
-                                        padding: '8px 16px',
-                                        fontSize: 12,
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', height: 48, fontSize: 13, fontWeight: 700, cursor: 'pointer',
                                         borderRight: '1px solid var(--border)',
-                                        background: selectedTable === t ? 'var(--bg-surface)' : 'transparent',
-                                        color: selectedTable === t ? 'var(--brand)' : 'var(--text-secondary)',
-                                        borderBottom: selectedTable === t ? '2px solid var(--brand)' : '2px solid transparent',
-                                        transition: 'all 0.2s',
-                                        minWidth: 100,
-                                        maxWidth: 200
+                                        background: selectedTable === t ? 'var(--bg-main)' : 'var(--bg-surface)',
+                                        color: selectedTable === t ? 'var(--brand)' : 'var(--text-muted)',
+                                        position: 'relative', minWidth: 160, maxWidth: 280, transition: 'all 0.2s'
                                     }}>
-                                    <span className="truncate" style={{ flex: 1 }}>{t}</span>
+                                    <TableIcon size={14} style={{ flexShrink: 0, opacity: selectedTable === t ? 1 : 0.4 }} />
+                                    <span style={{ fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</span>
                                     <button
                                         onClick={(e) => closeTab(e, t)}
-                                        style={{
-                                            border: 'none',
-                                            background: 'none',
-                                            padding: 2,
-                                            borderRadius: 4,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'var(--text-muted)',
-                                            cursor: 'pointer'
-                                        }}
-                                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-overlay)')}
-                                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                                        style={{ border: 'none', background: 'transparent', width: 24, height: 24, borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: selectedTable === t ? 1 : 0 }}
+                                        className="tab-close-btn"
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
                                     >
-                                        <X size={10} />
+                                        <X size={12} />
                                     </button>
+                                    {selectedTable === t && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'var(--brand)' }} />}
                                 </div>
                             ))}
                         </div>
 
-                        {/* Toolbar */}
-                        <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-surface)', flexShrink: 0, gap: 12 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <span style={{ fontWeight: 600 }}>{selectedTable}</span>
-                                <span className="badge badge-gray">{total} rows</span>
-                                {selected.size > 0 && <span className="badge badge-blue">{selected.size} selected</span>}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                {selected.size > 0 && (
-                                    <button className="btn btn-danger btn-sm" onClick={deleteSelected} disabled={deleting}>
-                                        {deleting ? <span className="spinner spinner-sm" /> : <Trash2 size={13} />}
-                                        Delete {selected.size}
-                                    </button>
-                                )}
-                                {/* Export dropdown */}
-                                <div style={{ position: 'relative' }}>
-                                    <button className="btn btn-outline btn-sm" onClick={() => handleExport('csv')}><Download size={13} />CSV</button>
+                        {/* Editor Intelligence Toolbar */}
+                        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-surface)', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{selectedTable}</h3>
+                                    <div style={{ fontSize: 11, fontWeight: 900, background: 'rgba(16, 185, 129, 0.1)', color: 'var(--brand)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                        {total} FILAS
+                                    </div>
                                 </div>
-                                <button className="btn btn-outline btn-sm" onClick={() => handleExport('json')}><Download size={13} />JSON</button>
-                                <button className="btn btn-ghost btn-sm" onClick={() => selectTable(selectedTable)}><RefreshCw size={13} />Refresh</button>
+                                {selected.size > 0 && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 14px', background: 'linear-gradient(to right, var(--brand), #059669)', color: '#fff', borderRadius: 20, fontSize: 12, fontWeight: 800, boxShadow: '0 4px 10px rgba(16, 185, 129, 0.2)' }}>
+                                        <CheckSquare size={14} /> {selected.size} Seleccionados
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                {selected.size > 0 ? (
+                                    <button className="btn btn-primary" onClick={deleteSelected} disabled={deleting} style={{ background: 'var(--danger)', height: 40, padding: '0 20px', fontWeight: 700 }}>
+                                        {deleting ? <RefreshCw size={16} className="spinner" /> : <Trash2 size={16} />}
+                                        Eliminar registros
+                                    </button>
+                                ) : (
+                                    <>
+                                        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-base)', padding: 4, borderRadius: 10, border: '1px solid var(--border)' }}>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => handleExport('csv')} style={{ height: 32, padding: '0 12px', fontSize: 12, fontWeight: 700, gap: 6 }}>
+                                                <Download size={12} /> CSV
+                                            </button>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => handleExport('json')} style={{ height: 32, padding: '0 12px', fontSize: 12, fontWeight: 700, gap: 6 }}>
+                                                <FileJson size={12} /> JSON
+                                            </button>
+                                        </div>
+                                        <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <select
+                                                className="input"
+                                                style={{ height: 36, fontSize: 13, background: 'var(--bg-base)' }}
+                                                value={filterCol}
+                                                onChange={e => setFilterCol(e.target.value)}
+                                            >
+                                                <option value="">Filtro Avanzado</option>
+                                                {columns.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                                            </select>
+                                            {filterCol && (
+                                                <div style={{ position: 'relative' }}>
+                                                    <Filter size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                                    <input
+                                                        className="input"
+                                                        placeholder="Valor..."
+                                                        value={filterVal}
+                                                        onChange={e => setFilterVal(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter') loadPage(0); }}
+                                                        style={{ height: 36, paddingLeft: 32, fontSize: 13, minWidth: 160 }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                                <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
+                                <button className="btn btn-ghost" onClick={() => selectTable(selectedTable)} style={{ height: 40, width: 40, padding: 0, justifyContent: 'center' }}>
+                                    <RefreshCw size={18} className={loading ? 'spinner' : ''} color="var(--text-secondary)" />
+                                </button>
+                                <button className="btn btn-ghost" style={{ height: 40, width: 40, padding: 0, justifyContent: 'center' }}>
+                                    <Settings2 size={18} color="var(--text-secondary)" />
+                                </button>
                             </div>
                         </div>
 
-                        {loading ? (
-                            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>
-                        ) : (
-                            <>
-                                <div className="table-wrap" style={{ flex: 1, overflow: 'auto' }}>
-                                    <table className="table" style={{ minWidth: '100%' }}>
-                                        <thead>
-                                            <tr>
-                                                {/* Select-all checkbox */}
+                        {/* High-Performance Spreadsheet Grid */}
+                        <div style={{ flex: 1, overflow: 'auto', position: 'relative', background: 'var(--bg-base)' }}>
+                            {loading && !rows.length && (
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(255,255,255,0.02)', zIndex: 10 }}>
+                                    <div className="spinner" style={{ width: 48, height: 48, borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
+                                </div>
+                            )}
+
+                            <table style={{ minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'auto' }}>
+                                <thead style={{ position: 'sticky', top: 0, zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                                    <tr style={{ background: 'var(--bg-surface)' }}>
+                                        {hasIds && (
+                                            <th style={{ width: 60, padding: 0, borderRight: '1px solid var(--border)', borderBottom: '2px solid var(--border)', position: 'sticky', left: 0, zIndex: 10, background: 'var(--bg-surface)' }}>
+                                                <div
+                                                    onClick={toggleAll}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 48, cursor: 'pointer' }}
+                                                >
+                                                    {allSelected ? <CheckSquare size={18} color="var(--brand)" /> : <Square size={18} color="var(--border)" />}
+                                                </div>
+                                            </th>
+                                        )}
+                                        {columns.map(c => (
+                                            <th key={c.name} style={{ textAlign: 'left', padding: '0 20px', borderRight: '1px solid var(--border)', borderBottom: '2px solid var(--border)', height: 48, minWidth: 160 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                        <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>{c.name}</span>
+                                                        <span style={{ fontSize: 9, color: 'var(--text-muted)', background: 'var(--bg-main)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid var(--border-soft)' }}>{c.type.toUpperCase()}</span>
+                                                    </div>
+                                                    <ChevronDown size={14} color="var(--text-muted)" style={{ opacity: 0.5 }} />
+                                                </div>
+                                            </th>
+                                        ))}
+                                        <th style={{ borderBottom: '2px solid var(--border)', background: 'var(--bg-surface)', minWidth: 200 }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={columns.length + 2} style={{ padding: '120px 40px', textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+                                                    <div style={{ opacity: 0.1 }}><Layers size={64} /></div>
+                                                    <div style={{ color: 'var(--text-secondary)', fontSize: 15, fontWeight: 500 }}>No hay registros disponibles en esta vista.</div>
+                                                    <button className="btn btn-primary" style={{ height: 40, padding: '0 24px' }}>Añadir Primera Fila</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : rows.map((row, i) => {
+                                        const rowId = row.id;
+                                        const isSelected = rowId && selected.has(rowId);
+                                        return (
+                                            <tr key={i} style={{
+                                                background: isSelected ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
+                                                transition: 'background 0.1s'
+                                            }}>
                                                 {hasIds && (
-                                                    <th style={{ width: 36, padding: '0 10px' }}>
-                                                        <button className="btn btn-ghost btn-icon btn-sm" onClick={toggleAll} style={{ color: 'var(--text-secondary)' }}>
-                                                            {allSelected ? <CheckSquare size={14} color="var(--brand)" /> : <Square size={14} />}
-                                                        </button>
-                                                    </th>
+                                                    <td style={{ borderRight: '1px solid var(--border)', padding: 0, position: 'sticky', left: 0, zIndex: 8, background: isSelected ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-surface)' }}>
+                                                        <div
+                                                            onClick={(e) => toggleRow(rowId, e)}
+                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 48, cursor: 'pointer' }}
+                                                        >
+                                                            {isSelected ? <CheckSquare size={18} color="var(--brand)" /> : <Square size={18} color="var(--border)" style={{ opacity: 0.4 }} />}
+                                                        </div>
+                                                    </td>
                                                 )}
                                                 {columns.map(c => (
-                                                    <th key={c.name}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                            {c.name}
-                                                            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>{c.type}</span>
-                                                            {c.is_nullable === 'NO' && <span style={{ fontSize: 9, color: 'var(--danger)', fontWeight: 600 }}>NOT NULL</span>}
-                                                        </div>
-                                                    </th>
+                                                    <td key={c.name} style={{ borderBottom: '1px solid var(--border)', padding: 0 }}>
+                                                        <EditableCell
+                                                            value={row[c.name]}
+                                                            col={c}
+                                                            rowId={rowId}
+                                                            projectId={projectId!}
+                                                            table={selectedTable}
+                                                            onSaved={() => loadPage(page)}
+                                                        />
+                                                    </td>
                                                 ))}
+                                                <td style={{ borderBottom: '1px solid var(--border)' }}></td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {rows.length === 0 ? (
-                                                <tr><td colSpan={columns.length + 1} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 20px' }}>No rows yet</td></tr>
-                                            ) : rows.map((row, i) => {
-                                                const rowId = row.id;
-                                                const isSelected = rowId && selected.has(rowId);
-                                                return (
-                                                    <tr key={i} style={{ background: isSelected ? 'var(--brand-light)' : undefined }}>
-                                                        {hasIds && (
-                                                            <td style={{ width: 36, padding: '0 10px' }}>
-                                                                {rowId && (
-                                                                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => toggleRow(rowId)} style={{ color: isSelected ? 'var(--brand)' : 'var(--text-muted)' }}>
-                                                                        {isSelected ? <CheckSquare size={14} /> : <Square size={14} />}
-                                                                    </button>
-                                                                )}
-                                                            </td>
-                                                        )}
-                                                        {columns.map(c => (
-                                                            <td key={c.name}>
-                                                                <EditableCell
-                                                                    value={row[c.name]}
-                                                                    col={c}
-                                                                    rowId={rowId}
-                                                                    projectId={projectId!}
-                                                                    table={selectedTable}
-                                                                    onSaved={() => selectTable(selectedTable)}
-                                                                />
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
 
-                                {/* Pagination */}
-                                <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0, background: 'var(--bg-surface)' }}>
-                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Rows per page:</span>
-                                            <select
-                                                className="select"
-                                                value={limit}
-                                                onChange={e => {
-                                                    const newLimit = parseInt(e.target.value);
-                                                    setLimit(newLimit);
-                                                    loadPage(0, newLimit);
-                                                }}
-                                                style={{ height: 26, fontSize: 11, padding: '0 4px', width: 65 }}
-                                            >
-                                                <option value={50}>50</option>
-                                                <option value={100}>100</option>
-                                                <option value={500}>500</option>
-                                                <option value={1000}>1000</option>
-                                            </select>
-                                        </div>
-                                        <span>{total === 0 ? '0 rows' : `Showing ${page * limit + 1}–${Math.min((page + 1) * limit, total)} of ${total}`}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <button className="btn btn-outline btn-sm" disabled={page === 0} onClick={() => loadPage(page - 1)}>← Prev</button>
-                                        <button className="btn btn-outline btn-sm" disabled={(page + 1) * limit >= total} onClick={() => loadPage(page + 1)}>Next →</button>
-                                    </div>
+                        {/* Enterprise Pagination Engine */}
+                        <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-surface)', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Muestra:</span>
+                                    <select
+                                        className="input"
+                                        value={limit}
+                                        onChange={e => {
+                                            const newLimit = parseInt(e.target.value);
+                                            setLimit(newLimit);
+                                            loadPage(0, newLimit);
+                                        }}
+                                        style={{ height: 32, fontSize: 12, padding: '0 10px', width: 80, background: 'var(--bg-main)', border: '1px solid var(--border)' }}
+                                    >
+                                        {[25, 50, 100, 250, 500].map(v => <option key={v} value={v}>{v} filas</option>)}
+                                    </select>
                                 </div>
-                            </>
-                        )}
+                                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Columns size={14} color="var(--brand)" />
+                                    {total === 0 ? 'Sin datos' : `${page * limit + 1} – ${Math.min((page + 1) * limit, total)} de ${total} registros`}
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button className="btn btn-outline btn-sm" disabled={page === 0} onClick={() => loadPage(page - 1)} style={{ height: 36, padding: '0 16px', gap: 8, fontWeight: 700 }}>
+                                    <ChevronLeft size={16} /> Anterior
+                                </button>
+                                <button className="btn btn-outline btn-sm" disabled={(page + 1) * limit >= total} onClick={() => loadPage(page + 1)} style={{ height: 36, padding: '0 16px', gap: 8, fontWeight: 700 }}>
+                                    Siguiente <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </div>
                     </>
                 )}
             </div>
 
             {showCreate && <CreateTableModal projectId={projectId!} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); loadTables(); }} />}
+
+            <style>{`
+                .truncate {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .spinner {
+                    animation: spin 1s linear infinite;
+                }
+                .spinner-sm {
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    border-top-color: #fff;
+                    animation: spin 0.8s linear infinite;
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .table-item:hover .table-actions {
+                    opacity: 1 !important;
+                }
+                .table-item:hover {
+                    background: var(--bg-main) !important;
+                }
+                .tab-close-btn:hover {
+                    opacity: 1 !important;
+                }
+            `}</style>
         </div>
     );
 }

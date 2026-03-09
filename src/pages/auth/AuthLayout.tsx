@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Code2, Terminal, ShieldCheck, Sparkles } from 'lucide-react';
+import { Code2, Terminal, ShieldCheck, Sparkles, Database, Box, CheckCircle2, ArrowRight } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 interface AuthLayoutProps {
@@ -15,67 +15,71 @@ export default function AuthLayout({ children, mode }: AuthLayoutProps) {
         <div style={{
             minHeight: '100vh',
             display: 'grid',
-            gridTemplateColumns: 'minmax(450px, 0.8fr) 1.2fr',
-            background: '#040405',
+            gridTemplateColumns: 'minmax(480px, 0.7fr) 1.3fr',
+            background: 'var(--bg-base)',
             color: 'var(--text-primary)',
-            fontFamily: "'Inter', system-ui, sans-serif"
+            transition: 'background-color 0.3s ease',
+            overflow: 'hidden'
         }}>
             {/* Left Column: Form Section */}
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
-                padding: '40px 60px',
-                background: 'radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.03) 0%, transparent 50%)',
+                padding: '50px 70px',
                 position: 'relative',
-                zIndex: 10
+                zIndex: 10,
+                borderRight: '1px solid var(--border)',
+                background: 'var(--bg-surface)'
             }}>
                 {/* Header/Logo */}
-                <div style={{ marginBottom: 60 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ marginBottom: 80 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{
-                            position: 'relative',
-                            padding: 4,
-                            borderRadius: 10,
-                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
-                            border: '1px solid rgba(99, 102, 241, 0.2)'
+                            width: 38, height: 38, borderRadius: 10,
+                            background: 'linear-gradient(135deg, var(--brand), #059669)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 4px 10px rgba(16, 185, 129, 0.25)'
                         }}>
-                            <img src={logo} alt="MatuDB Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                            <img src={logo} alt="MatuDB Logo" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }} />
                         </div>
-                        <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.8px', color: '#fff' }}>MatuDB</span>
+                        <div>
+                            <span style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-1.2px', color: 'var(--text-primary)', display: 'block' }}>MatuDB</span>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--brand)', letterSpacing: '2px', textTransform: 'uppercase', marginTop: -4, display: 'block' }}>Enterprise Console</span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Form content */}
                 <div style={{
                     width: '100%',
-                    maxWidth: 380,
+                    maxWidth: 400,
                     margin: '0 auto',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                     flex: 1
                 }}>
-                    <div style={{ marginBottom: 40 }}>
+                    <div style={{ marginBottom: 44 }}>
                         <div style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 8,
-                            padding: '4px 12px',
-                            borderRadius: 20,
-                            background: 'rgba(99, 102, 241, 0.1)',
+                            gap: 10,
+                            padding: '6px 14px',
+                            borderRadius: 12,
+                            background: 'rgba(16, 185, 129, 0.08)',
                             color: 'var(--brand)',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            marginBottom: 16,
-                            border: '1px solid rgba(99, 102, 241, 0.2)'
+                            fontSize: 13,
+                            fontWeight: 700,
+                            marginBottom: 20,
+                            border: '1px solid rgba(16, 185, 129, 0.15)'
                         }}>
-                            <Sparkles size={12} />
-                            {mode === 'login' ? 'Authentication' : 'Get Started'}
+                            <Sparkles size={14} />
+                            {mode === 'login' ? 'Bienvenido de nuevo' : 'Plataforma de Datos v4'}
                         </div>
-                        <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 12, letterSpacing: '-1.5px', color: '#fff' }}>
+                        <h1 style={{ fontSize: 40, fontWeight: 900, marginBottom: 16, letterSpacing: '-2px', color: 'var(--text-primary)' }}>
                             {mode === 'login' ? t('auth.login.title') : t('auth.register.title')}
                         </h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.6 }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1.6, fontWeight: 500 }}>
                             {mode === 'login' ? t('auth.login.subtitle') : t('auth.register.subtitle')}
                         </p>
                     </div>
@@ -84,157 +88,116 @@ export default function AuthLayout({ children, mode }: AuthLayoutProps) {
                 </div>
 
                 {/* Footer info (Terms) */}
-                <div style={{ marginTop: 40, paddingTop: 32, fontSize: 13, color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <p style={{ lineHeight: 1.5 }}>
-                        {t('auth.register.terms')}
+                <div style={{ marginTop: 60, paddingTop: 32, fontSize: 13, color: 'var(--text-muted)', borderTop: '1px solid var(--border)', fontWeight: 500 }}>
+                    <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
+                        <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Términos</a>
+                        <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacidad</a>
+                        <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Soporte</a>
+                    </div>
+                    <p style={{ lineHeight: 1.5, opacity: 0.6 }}>
+                        © 2024 MatuDB Inc. Todos los derechos reservados.
                     </p>
                 </div>
             </div>
 
-            {/* Right Column: Dynamic "Something More" Section */}
+            {/* Right Column: Hero Section (Modern & Techy) */}
             <div style={{
-                background: '#000',
+                background: 'var(--bg-base)',
                 position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                padding: 80,
+                padding: '80px 100px',
                 overflow: 'hidden'
             }}>
-                {/* Animated Mesh Gradients */}
+                {/* Visual Elements */}
                 <div style={{
-                    position: 'absolute', top: '10%', right: '5%', width: '70%', height: '70%',
-                    background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%)',
-                    filter: 'blur(80px)', animation: 'float 20s infinite alternate'
+                    position: 'absolute', top: '15%', right: '-5%', width: '500px', height: '500px',
+                    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)',
+                    zIndex: 0, filter: 'blur(60px)'
                 }} />
                 <div style={{
-                    position: 'absolute', bottom: '15%', left: '10%', width: '60%', height: '60%',
-                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%)',
-                    filter: 'blur(100px)', animation: 'float 25s infinite alternate-reverse'
+                    position: 'absolute', bottom: '10%', left: '0', width: '300px', height: '300px',
+                    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%)',
+                    zIndex: 0, filter: 'blur(40px)'
                 }} />
 
-                {/* Floating Code Experience (The "Something More") */}
                 <div style={{ position: 'relative', zIndex: 10 }}>
-                    <div style={{ marginBottom: 48 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--brand)', marginBottom: 16 }}>
-                            Engineered for Velocity
-                        </h3>
-                        <h2 style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-2px', color: '#fff', maxWidth: 500, lineHeight: 1.1 }}>
-                            PostgreSQL <br /> <span style={{ color: 'rgba(255,255,255,0.4)' }}>without the overhead.</span>
+                    <div style={{ marginBottom: 64 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--brand)', fontWeight: 800, fontSize: 13, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 20 }}>
+                            <Database size={18} /> Engine de Datos Global
+                        </div>
+                        <h2 style={{ fontSize: 56, fontWeight: 900, letterSpacing: '-2.5px', maxWidth: 640, lineHeight: 1, color: 'var(--text-primary)' }}>
+                            Escalabilidad masiva. <br /> <span style={{ color: 'var(--brand)' }}>Simplicidad radical.</span>
                         </h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 20, marginTop: 24, maxWidth: 500, lineHeight: 1.6, fontWeight: 500 }}>
+                            Despliega nodos de PostgreSQL reactivos con autenticación integrada y orquestación edge.
+                        </p>
                     </div>
 
-                    {/* Interactive-looking mock terminal / code snack */}
-                    <div style={{
-                        background: 'rgba(15, 15, 18, 0.6)',
-                        backdropFilter: 'blur(20px)',
-                        borderRadius: 16,
+                    {/* Pro Mock Terminal */}
+                    <div className="auth-terminal" style={{
+                        background: '#0a0a0c',
+                        borderRadius: 24,
                         border: '1px solid rgba(255,255,255,0.08)',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        boxShadow: '0 40px 80px -15px rgba(0,0,0,0.4)',
                         width: '100%',
-                        maxWidth: 540,
-                        overflow: 'hidden'
+                        maxWidth: 600,
+                        overflow: 'hidden',
+                        position: 'relative'
                     }}>
-                        <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 6 }}>
-                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f56' }} />
-                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffbd2e' }} />
-                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#27c93f' }} />
-                            <div style={{ marginLeft: 12, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>api_preview.ts — MatuDB</div>
-                        </div>
-                        <div style={{ padding: 24, fontFamily: 'monospace', fontSize: 14, lineHeight: 1.6 }}>
-                            <div style={{ color: '#8b5cf6' }}>import <span style={{ color: '#fff' }}>{'{ createClient }'}</span> from <span style={{ color: '#10b981' }}>'@matudb/sdk'</span>;</div>
-                            <div style={{ marginTop: 12 }}>
-                                <span style={{ color: '#8b5cf6' }}>const</span> matudb = <span style={{ color: '#6366f1' }}>createClient</span>({'{'}
-                                <div style={{ paddingLeft: 20 }}>
-                                    <span style={{ color: 'rgba(255,255,255,0.5)' }}>url:</span> <span style={{ color: '#10b981' }}>'https://api.matudb.cloud/v1'</span>,
-                                </div>
-                                <div style={{ paddingLeft: 20 }}>
-                                    <span style={{ color: 'rgba(255,255,255,0.5)' }}>apiKey:</span> <span style={{ color: '#10b981' }}>'mb_live_...'</span>
-                                </div>
-                                {'}'});
+                        <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f56' }} />
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffbd2e' }} />
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#27c93f' }} />
                             </div>
-                            <div style={{ marginTop: 12 }}>
-                                <span style={{ color: '#8b5cf6' }}>await</span> matudb.<span style={{ color: '#6366f1' }}>from</span>(<span style={{ color: '#10b981' }}>'users'</span>)
-                                <div style={{ paddingLeft: 20 }}>
-                                    .<span style={{ color: '#6366f1' }}>select</span>(<span style={{ color: '#10b981' }}>'*'</span>)
-                                </div>
-                                <div style={{ paddingLeft: 20 }}>
-                                    .<span style={{ color: '#6366f1' }}>order</span>(<span style={{ color: '#10b981' }}>'created_at'</span>, {'{ ascending: false }'});
-                                </div>
-                            </div>
+                            <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', letterSpacing: '1px', textTransform: 'uppercase' }}>matu-sdk-v4.ts</div>
                         </div>
-                        <div style={{ height: 4, background: 'linear-gradient(90deg, var(--brand) 30%, #8b5cf6 60%, #10b981 100%)', width: '40%' }} />
+                        <div style={{ padding: '32px 40px', fontFamily: 'var(--font-mono)', fontSize: 15, lineHeight: 1.8, color: '#94a3b8' }}>
+                            <div style={{ display: 'flex', gap: 16 }}><span style={{ opacity: 0.3, width: 20 }}>1</span> <div><span style={{ color: '#10b981', fontWeight: 700 }}>import</span> {'{ MatuDB }'} <span style={{ color: '#10b981', fontWeight: 700 }}>from</span> <span style={{ color: '#34d399' }}>'@matudb/core'</span>;</div></div>
+                            <div style={{ display: 'flex', gap: 16, marginTop: 12 }}><span style={{ opacity: 0.3, width: 20 }}>2</span> <div><span style={{ color: '#10b981', fontWeight: 700 }}>const</span> db = <span style={{ color: '#6366f1', fontWeight: 700 }}>new</span> <span style={{ color: '#38bdf8' }}>MatuDB</span>({'{'} endpoint, key {'}'});</div></div>
+                            <div style={{ display: 'flex', gap: 16, marginTop: 12 }}><span style={{ opacity: 0.3, width: 20 }}>3</span> <div style={{ color: 'rgba(255,255,255,0.2)' }}>// Consultas ultra-rápidas con RLS</div></div>
+                            <div style={{ display: 'flex', gap: 16, marginTop: 4 }}><span style={{ opacity: 0.3, width: 20 }}>4</span> <div><span style={{ color: '#10b981', fontWeight: 700 }}>const</span> data = <span style={{ color: '#10b981', fontWeight: 700 }}>await</span> db.<span style={{ color: '#38bdf8' }}>from</span>(<span style={{ color: '#34d399' }}>'orders'</span>)</div></div>
+                            <div style={{ display: 'flex', gap: 16 }}><span style={{ opacity: 0.3, width: 20 }}>5</span> <div style={{ paddingLeft: 32 }}>.<span style={{ color: '#38bdf8' }}>select</span>(<span style={{ color: '#34d399' }}>'*, items(*)'</span>)</div></div>
+                            <div style={{ display: 'flex', gap: 16 }}><span style={{ opacity: 0.3, width: 20 }}>6</span> <div style={{ paddingLeft: 32 }}>.<span style={{ color: '#38bdf8' }}>eq</span>(<span style={{ color: '#34d399' }}>'status'</span>, <span style={{ color: '#34d399' }}>'paid'</span>);</div></div>
+                        </div>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to top, #0a0a0c, transparent)', pointerEvents: 'none' }} />
                     </div>
 
-                    <div style={{ marginTop: 40, display: 'flex', gap: 32 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                            <ShieldCheck size={16} /> Secure by Default
+                    <div style={{ marginTop: 64, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+                        <div style={{ background: 'var(--bg-surface)', padding: 24, borderRadius: 20, border: '1px solid var(--border)' }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                                <ShieldCheck size={22} />
+                            </div>
+                            <h4 style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>Ecosistema Seguro</h4>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>Basado en estándares militares de encriptación y Row Level Security.</p>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                            <Terminal size={16} /> CLI-first Workflow
+                        <div style={{ background: 'var(--bg-surface)', padding: 24, borderRadius: 20, border: '1px solid var(--border)' }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                                <Box size={22} />
+                            </div>
+                            <h4 style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>Despliegue Instantáneo</h4>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>Tu infraestructura lista en menos de 10 segundos, en cualquier región.</p>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                            <Code2 size={16} /> SDK for Everything
-                        </div>
-                    </div>
-                </div>
-
-                {/* Documentation badge */}
-                <div style={{ position: 'absolute', top: 32, right: 32 }}>
-                    <div style={{
-                        padding: '8px 16px',
-                        borderRadius: 8,
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8
-                    }}>
-                        Developer Docs <Code2 size={14} />
                     </div>
                 </div>
             </div>
 
             <style>{`
-        @keyframes float {
-          0% { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(30px, -20px) scale(1.1); }
-        }
-        @media (max-width: 1024px) {
-          div[style*="gridTemplateColumns"] {
-            grid-template-columns: 1fr !important;
-          }
-          div[style*="background: #000"] {
-            display: none !important;
-          }
-        }
-        .btn-social {
-          transition: all 0.2s ease;
-          border: 1px solid rgba(255,255,255,0.08) !important;
-          background: rgba(255,255,255,0.02) !important;
-          color: #fff !important;
-        }
-        .btn-social:hover {
-          background: rgba(255,255,255,0.05) !important;
-          border-color: rgba(99, 102, 241, 0.4) !important;
-          transform: translateY(-1px);
-        }
-        .matudb-input {
-          background: rgba(15, 15, 18, 0.6) !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          color: #fff !important;
-          transition: all 0.2s ease;
-        }
-        .matudb-input:focus {
-          border-color: var(--brand) !important;
-          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
-          background: rgba(15, 15, 18, 0.8) !important;
-        }
-      `}</style>
+                @media (max-width: 1024px) {
+                    div[style*="gridTemplateColumns"] { grid-template-columns: 1fr !important; }
+                    div[style*="hero-section"] { display: none !important; }
+                }
+                .auth-terminal {
+                    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+                }
+                .auth-terminal:hover {
+                    transform: translateY(-8px) scale(1.02);
+                    box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
+                    border-color: rgba(16, 185, 129, 0.3);
+                }
+            `}</style>
         </div>
     );
 }

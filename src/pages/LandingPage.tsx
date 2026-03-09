@@ -13,38 +13,38 @@ import MarketingLayout from './marketing/MarketingLayout';
 
 export default function LandingPage() {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    useTranslation();
 
     const features = [
         {
-            title: t('landing.features.database.title'),
-            description: t('landing.features.database.description'),
-            icon: <Database className="text-brand" size={20} />,
+            title: 'Base de datos SQL',
+            description: 'Potente base de datos Postgres con todas las funcionalidades que esperas de un entorno empresarial.',
+            icon: <Database size={20} />,
         },
         {
-            title: t('landing.features.auth.title'),
-            description: t('landing.features.auth.description'),
-            icon: <ShieldCheck className="text-brand" size={20} />,
+            title: 'Autenticación Segura',
+            description: 'Gestiona usuarios y roles de forma sencilla con nuestro sistema de autenticación integrado.',
+            icon: <ShieldCheck size={20} />,
         },
         {
-            title: t('landing.features.edge_functions.title'),
-            description: t('landing.features.edge_functions.description'),
-            icon: <Zap className="text-brand" size={20} />,
+            title: 'Edge Functions',
+            description: 'Ejecuta lógica personalizada cerca de tus usuarios para una latencia mínima y escalabilidad infinita.',
+            icon: <Zap size={20} />,
         },
         {
-            title: t('landing.features.realtime.title'),
-            description: t('landing.features.realtime.description'),
-            icon: <Radio className="text-brand" size={20} />,
+            title: 'Realtime Sync',
+            description: 'Sincroniza datos en tiempo real entre todos tus clientes sin configurar servidores complejos.',
+            icon: <Radio size={20} />,
         },
         {
-            title: t('landing.features.storage.title'),
-            description: t('landing.features.storage.description'),
-            icon: <HardDrive className="text-brand" size={20} />,
+            title: 'Almacenamiento',
+            description: 'Sube y gestiona archivos grandes con nuestra infraestructura de almacenamiento redundante.',
+            icon: <HardDrive size={20} />,
         },
         {
-            title: t('landing.features.vector.title'),
-            description: t('landing.features.vector.description'),
-            icon: <Code2 className="text-brand" size={20} />,
+            title: 'API de Vectores',
+            description: 'Integración nativa para búsqueda semántica y aplicaciones de IA de última generación.',
+            icon: <Code2 size={20} />,
         }
     ];
 
@@ -52,133 +52,106 @@ export default function LandingPage() {
         <MarketingLayout>
             {/* Hero Section */}
             <section style={{
-                padding: '160px 24px 100px',
+                padding: '120px 24px 80px',
                 textAlign: 'center',
-                position: 'relative',
-                overflow: 'hidden'
+                position: 'relative'
             }}>
-                <div style={{
-                    position: 'absolute',
-                    top: '-10%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '100%',
-                    height: '100%',
-                    backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.2), transparent 70%), radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1), transparent 50%)',
-                    zIndex: -1
-                }} />
-                <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-                    <h1 style={{
-                        fontSize: 'clamp(40px, 8vw, 96px)',
-                        fontWeight: 800,
-                        letterSpacing: '-0.04em',
-                        lineHeight: 0.9,
-                        marginBottom: 32,
-                        backgroundImage: 'linear-gradient(180deg, #fff 0%, #aaa 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent'
+                <div style={{ maxWidth: 900, margin: '0 auto' }}>
+                    <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 8,
+                        padding: '6px 12px', borderRadius: 20, background: 'var(--bg-overlay)',
+                        fontSize: 13, fontWeight: 600, color: 'var(--brand)', marginBottom: 24,
+                        border: '1px solid var(--border)'
                     }}>
-                        {t('landing.hero.title_top')}<br />
-                        <span style={{
-                            backgroundImage: 'linear-gradient(180deg, #6366f1 0%, #4f46e5 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                        }}>{t('landing.hero.title_bottom')}</span>
+                        <span style={{ fontSize: 16 }}>🚀</span> MatuDB Beta ya disponible
+                    </div>
+
+                    <h1 style={{
+                        fontSize: 'clamp(36px, 8vw, 72px)',
+                        fontWeight: 800,
+                        letterSpacing: '-0.03em',
+                        lineHeight: 1.1,
+                        marginBottom: 24,
+                        color: 'var(--text-primary)'
+                    }}>
+                        La infraestructura de datos <br />
+                        para <span style={{ color: 'var(--brand)' }}>empresas modernas</span>
                     </h1>
 
                     <p style={{
-                        fontSize: 'clamp(16px, 2vw, 20px)',
-                        color: '#888',
+                        fontSize: 'clamp(16px, 2vw, 19px)',
+                        color: 'var(--text-secondary)',
                         maxWidth: 640,
-                        margin: '0 auto 48px',
+                        margin: '0 auto 40px',
                         lineHeight: 1.6
                     }}>
-                        {t('landing.hero.description')}
+                        Crea, escala y gestiona tus aplicaciones con la base de datos empresarial más rápida e intuitiva del mercado. Sin configuraciones complejas.
                     </p>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16 }}>
                         <button
                             onClick={() => navigate('/dashboard')}
-                            style={{
-                                backgroundColor: '#6366f1',
-                                color: '#fff',
-                                padding: '14px 28px',
-                                borderRadius: 8,
-                                fontSize: 16,
-                                fontWeight: 600,
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8
-                            }}>
-                            Empezar tu proyecto <ArrowRight size={18} />
+                            className="btn btn-primary"
+                            style={{ padding: '14px 32px', fontSize: 16 }}
+                        >
+                            Empezar ahora — Es gratis <ArrowRight size={18} />
                         </button>
-                        <button style={{
-                            backgroundColor: '#232323',
-                            color: '#fff',
-                            padding: '14px 28px',
-                            borderRadius: 8,
-                            fontSize: 16,
-                            fontWeight: 600,
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            cursor: 'pointer'
-                        }}>
-                            {t('landing.hero.cta_secondary')}
+                        <button className="btn btn-outline" style={{ padding: '14px 32px', fontSize: 16 }}>
+                            Ver documentación
                         </button>
                     </div>
                 </div>
             </section>
 
-            {/* Trusted By / Partners */}
-            <section style={{ padding: '40px 24px', textAlign: 'center' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 32 }}>
-                    {t('landing.social.trusted_by')}
-                </p>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    flexWrap: 'wrap',
-                    gap: '40px 60px',
-                    opacity: 0.5,
-                    filter: 'grayscale(1)'
-                }}>
-                    {['submagic', 'moz://a', 'GitHub', '1Password', 'Priceline'].map(brand => (
-                        <span key={brand} style={{ fontSize: 20, fontWeight: 700, color: '#888' }}>{brand}</span>
+            {/* Social Proof / Stats */}
+            <section style={{ padding: '60px 24px', textAlign: 'center', background: 'var(--bg-surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 40 }}>
+                    {[
+                        { label: 'Proyectos creados', val: '50k+' },
+                        { label: 'Tiempo de actividad', val: '99.99%' },
+                        { label: 'Tiempo de respuesta', val: '< 50ms' },
+                    ].map(stat => (
+                        <div key={stat.label}>
+                            <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--brand)' }}>{stat.val}</div>
+                            <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>{stat.label}</div>
+                        </div>
                     ))}
                 </div>
             </section>
 
             {/* Features Grid */}
             <section style={{ padding: '100px 24px', maxWidth: 1200, margin: '0 auto' }}>
+                <div style={{ textAlign: 'center', marginBottom: 64 }}>
+                    <h2 style={{ fontSize: 36, fontWeight: 800, marginBottom: 16 }}>Todo lo que necesitas para escalar</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 18 }}>Una plataforma integrada que elimina la fricción del desarrollo.</p>
+                </div>
+
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                    gap: 24
+                    gap: 32
                 }}>
                     {features.map((f, i) => (
-                        <div key={i} className="feature-card" style={{
-                            backgroundColor: '#161616',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            borderRadius: 12,
+                        <div key={i} className="card feature-card" style={{
                             padding: 32,
-                            transition: 'all 0.2s',
-                            cursor: 'pointer'
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 16
                         }}>
                             <div style={{
-                                width: 40,
-                                height: 40,
-                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                borderRadius: 10,
+                                width: 44,
+                                height: 44,
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                color: 'var(--brand)',
+                                borderRadius: 12,
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                marginBottom: 20
+                                justifyContent: 'center'
                             }}>
                                 {f.icon}
                             </div>
-                            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{f.title}</h3>
-                            <p style={{ fontSize: 14, color: '#888', lineHeight: 1.5 }}>{f.description}</p>
+                            <h3 style={{ fontSize: 20, fontWeight: 700 }}>{f.title}</h3>
+                            <p style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{f.description}</p>
                         </div>
                     ))}
                 </div>
@@ -186,9 +159,8 @@ export default function LandingPage() {
 
             <style>{`
                 .feature-card:hover {
-                    border-color: rgba(99, 102, 241, 0.3) !important;
+                    border-color: var(--brand) !important;
                     transform: translateY(-4px);
-                    background-color: #1a1a1a !important;
                 }
             `}</style>
         </MarketingLayout>

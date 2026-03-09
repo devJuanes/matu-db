@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/authStore';
+import { useUIStore } from './stores/uiStore';
 
 import LoginPage from './pages/auth/LoginPage';
+// ... rest of imports
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import ProjectLayout from './pages/project/ProjectLayout';
@@ -22,7 +24,6 @@ import AutomationEditor from './pages/project/automations/AutomationEditor';
 import MatriculaPage from './modules/matricula/MatriculaPage';
 import LandingPage from './pages/LandingPage';
 import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, BlogPage } from './pages/marketing/MarketingPages';
-
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuthStore();
@@ -52,11 +53,18 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function AppInit() {
   const { init } = useAuthStore();
-  useEffect(() => { init(); }, []);
+  const { theme } = useUIStore();
+
+  useEffect(() => {
+    init();
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
+
   return null;
 }
 
 export default function App() {
+
   return (
     <BrowserRouter>
       <AppInit />
@@ -68,28 +76,24 @@ export default function App() {
             color: 'var(--text-primary)',
             border: '1px solid var(--border)',
             fontFamily: 'Inter, sans-serif',
-            fontSize: 13,
+            fontSize: 14,
+            borderRadius: 'var(--radius)',
+            boxShadow: 'var(--shadow-lg)',
           },
-          success: { iconTheme: { primary: 'var(--brand)', secondary: '#000' } },
+          success: { iconTheme: { primary: 'var(--brand)', secondary: '#fff' } },
         }}
       />
       <Routes>
-        {/* Root landing page */}
+        {/* ... existing routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/product" element={<ProductPage />} />
         <Route path="/developers" element={<DevelopersPage />} />
         <Route path="/solutions" element={<SolutionsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/blog" element={<BlogPage />} />
-
-        {/* Auth routes */}
         <Route path="/auth/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/auth/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-
-        {/* Dashboard */}
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-
-        {/* Project sub-pages */}
         <Route path="/project/:projectId" element={<ProtectedRoute><ProjectLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="editor" replace />} />
           <Route path="editor" element={<TableEditorPage />} />
@@ -105,11 +109,7 @@ export default function App() {
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
-
-        {/* Demo modules — no auth required */}
         <Route path="/matricula" element={<MatriculaPage />} />
-
-        {/* 404 */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

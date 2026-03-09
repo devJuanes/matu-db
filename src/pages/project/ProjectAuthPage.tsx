@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import {
     Users, Copy, CheckCircle, XCircle, Code, Trash2,
     ShieldOff, ShieldCheck, AlertTriangle, Mail,
+    Search, UserPlus, MoreHorizontal, Filter,
+    Shield, Terminal, ExternalLink, Info, CheckCircle2, RefreshCw
 } from 'lucide-react';
 
 export default function ProjectAuthPage() {
@@ -14,6 +16,7 @@ export default function ProjectAuthPage() {
     const [tab, setTab] = useState<'users' | 'docs'>('users');
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -22,7 +25,7 @@ export default function ProjectAuthPage() {
             setUsers(res.data.data.users);
             setSelected(new Set());
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to load users');
+            toast.error(err.response?.data?.message || 'Error al cargar usuarios');
         } finally { setLoading(false); }
     }, [projectId]);
 
@@ -43,27 +46,30 @@ export default function ProjectAuthPage() {
     /* ── Delete selected ────────────────────────────────────── */
     const deleteSelected = async () => {
         if (!selected.size) return;
-        if (!confirm(`¿Eliminar ${selected.size} usuario(s)? Esta acción no se puede deshacer.`)) return;
+        if (!confirm(`¿Eliminar definitivamente a ${selected.size} usuario(s)? Esta acción no se puede deshacer.`)) return;
         setActionLoading('delete');
         let failed = 0;
-        await Promise.all([...selected].map(id =>
-            api.delete(`/projects/${projectId}/auth/users/${id}`).catch(() => { failed++; })
-        ));
-        if (failed) toast.error(`${failed} usuario(s) no se pudieron eliminar`);
-        else toast.success(`${selected.size} usuario(s) eliminado(s)`);
-        setActionLoading(null);
-        load();
+        try {
+            await Promise.all([...selected].map(id =>
+                api.delete(`/projects/${projectId}/auth/users/${id}`).catch(() => { failed++; })
+            ));
+            if (failed) toast.error(`${failed} usuario(s) no se pudieron eliminar`);
+            else toast.success(`${selected.size} usuario(s) eliminados correctamente`);
+            load();
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     /* ── Toggle active ──────────────────────────────────────── */
-    const toggleUser = async (userId: string, currentStatus: boolean, email: string) => {
+    const toggleUserStatus = async (userId: string, currentStatus: boolean, email: string) => {
         setActionLoading(userId);
         try {
             await api.patch(`/projects/${projectId}/auth/users/${userId}/toggle`);
-            toast.success(`${email} ${currentStatus ? 'inhabilitado' : 'habilitado'}`);
+            toast.success(`Usuario ${email} ${currentStatus ? 'desactivado' : 'activado'}`);
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: !u.is_active } : u));
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Error');
+            toast.error(err.response?.data?.message || 'Error al cambiar estado');
         } finally { setActionLoading(null); }
     };
 
@@ -72,198 +78,262 @@ export default function ProjectAuthPage() {
         setActionLoading(userId);
         try {
             await authAPI.recoverUserPassword(projectId!, userId);
-            toast.success(`Correo de recuperación enviado a ${email}`);
+            toast.success(`Instrucciones enviadas a ${email}`);
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Error al enviar recuperación');
         } finally { setActionLoading(null); }
     };
 
-    /* ── Code snippets ──────────────────────────────────────── */
-    const BASE = `http://localhost:3001/api/projects/${projectId}`;
-    const snippets: Record<string, string> = {
-        Register: `const res = await fetch('${BASE}/auth/register', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ email: 'user@example.com', password: 'secret123', name: 'Juan' })\n});\nconst { data } = await res.json(); // data.token`,
-
-        Login: `const res = await fetch('${BASE}/auth/login', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ email: 'user@example.com', password: 'secret123' })\n});\nconst { data } = await res.json(); // data.token`,
-
-        Recovery: `const res = await fetch('${BASE}/auth/recover', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ email: 'user@example.com' })\n});`,
-
-        Reset: `const res = await fetch('${BASE}/auth/reset', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ token: '...', password: 'new-secret-123' })\n});`,
-
-        Verify: `const res = await fetch('${BASE}/auth/verify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'apikey': '<anon-key>' },\n  body: JSON.stringify({ token: localStorage.getItem('token') })\n});\nconst { data } = await res.json(); // data.valid, data.payload`,
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success('Copiado');
     };
 
-    const copy = (text: string) => { navigator.clipboard.writeText(text); toast.success('Copiado'); };
+    /* ── Snippets ─────────────────────────────────────────── */
+    const BASE = `http://localhost:3001/api/projects/${projectId}`;
+    const snippets: Record<string, string> = {
+        'Registro de Usuario': `const res = await fetch('${BASE}/auth/register', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'apikey': 'TU_ANON_KEY' 
+  },
+  body: JSON.stringify({ 
+    email: 'usuario@ejemplo.com', 
+    password: 'password_seguro', 
+    name: 'Nombre Usuario' 
+  })
+});
 
-    /* ── Derived ────────────────────────────────────────────── */
+const { data } = await res.json();
+// data.token contiene el JWT`,
+
+        'Inicio de Sesión': `const res = await fetch('${BASE}/auth/login', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'apikey': 'TU_ANON_KEY' 
+  },
+  body: JSON.stringify({ 
+    email: 'usuario@ejemplo.com', 
+    password: 'password_seguro' 
+  })
+});
+
+const { data } = await res.json();
+// data.token y data.user`,
+
+        'Verificación de JWT': `const res = await fetch('${BASE}/auth/verify', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'apikey': 'TU_ANON_KEY' 
+  },
+  body: JSON.stringify({ 
+    token: localStorage.getItem('token') 
+  })
+});
+
+const { data } = await res.json();
+// data.valid (boolean) y data.payload`
+    };
+
+    const filteredUsers = users.filter(u =>
+        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.name && u.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
     const allSelected = users.length > 0 && selected.size === users.length;
     const someSelected = selected.size > 0;
 
     return (
-        <div style={{ padding: 28, maxWidth: 860 }}>
-            {/* Page header */}
-            <div className="page-header" style={{ padding: 0, border: 'none', marginBottom: 24 }}>
+        <div style={{ padding: '32px', maxWidth: '1100px', margin: '0 auto' }}>
+            {/* Header Area */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40 }}>
                 <div>
-                    <h1 className="page-title">Authentication</h1>
-                    <p className="page-subtitle">Gestión de usuarios finales del proyecto — independiente de la plataforma MatuDB</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--brand)', fontSize: 13, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        <Shield size={14} /> Seguridad y Acceso
+                    </div>
+                    <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1.5px', marginBottom: 12 }}>Gestión de Usuarios</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 15, maxWidth: 600 }}>
+                        Administra las cuentas de tus usuarios finales de forma centralizada.
+                        Configura políticas de acceso y monitorea actividad sospechosa.
+                    </p>
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <button className="btn btn-outline" style={{ height: 44, padding: '0 20px', gap: 10 }} onClick={load}>
+                        <RefreshCw size={16} className={loading ? 'spinner' : ''} /> Refrescar
+                    </button>
+                    <button className="btn btn-primary" style={{ height: 44, padding: '0 20px', gap: 10 }}>
+                        <UserPlus size={16} /> Nuevo Usuario
+                    </button>
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+            {/* Navigation Tabs */}
+            <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 32, position: 'relative' }}>
                 {(['users', 'docs'] as const).map(t => (
-                    <button key={t} className="btn btn-ghost btn-sm"
-                        style={{ borderBottom: tab === t ? '2px solid var(--brand)' : '2px solid transparent', borderRadius: 0, color: tab === t ? 'var(--brand)' : 'var(--text-secondary)', paddingBottom: 10, gap: 6 }}
-                        onClick={() => setTab(t)}>
-                        {t === 'users' ? <><Users size={13} />Usuarios</> : <><Code size={13} />Snippets de código</>}
+                    <button
+                        key={t}
+                        onClick={() => setTab(t)}
+                        style={{
+                            background: 'none', border: 'none', padding: '12px 16px', fontSize: 14, fontWeight: 700,
+                            color: tab === t ? 'var(--brand)' : 'var(--text-muted)', cursor: 'pointer',
+                            position: 'relative', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: 10
+                        }}>
+                        {t === 'users' ? <Users size={18} /> : <Terminal size={18} />}
+                        {t === 'users' ? 'Usuarios Registrados' : 'API & Documentación'}
+                        {tab === t && <div style={{ position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, background: 'var(--brand)' }} />}
                     </button>
                 ))}
             </div>
 
             {tab === 'users' ? (
                 <>
-                    {/* Bulk action toolbar — shows only when items selected */}
-                    {someSelected && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--brand-light)', border: '1px solid var(--brand)', borderRadius: 'var(--radius)', marginBottom: 14, animation: 'fadeIn .15s ease' }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand)', flex: 1 }}>
-                                {selected.size} usuario{selected.size > 1 ? 's' : ''} seleccionado{selected.size > 1 ? 's' : ''}
-                            </span>
-                            <button
-                                className="btn btn-sm"
-                                style={{ background: 'var(--danger)', color: '#fff', border: 'none', gap: 6 }}
-                                onClick={deleteSelected}
-                                disabled={actionLoading === 'delete'}>
-                                {actionLoading === 'delete'
-                                    ? <><span className="spinner spinner-sm" />Eliminando…</>
-                                    : <><Trash2 size={13} />Eliminar seleccionados</>}
-                            </button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>
-                                Cancelar
-                            </button>
+                    {/* Action Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <div style={{ position: 'relative', width: 340 }}>
+                            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input
+                                className="input"
+                                placeholder="Buscar por email o nombre..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                style={{ paddingLeft: 40, height: 44, fontSize: 14, background: 'var(--bg-surface)' }}
+                            />
                         </div>
-                    )}
 
-                    <div className="card">
-                        {loading ? (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-                                <span className="spinner" style={{ width: 28, height: 28 }} />
-                            </div>
-                        ) : users.length === 0 ? (
-                            <div className="empty-state" style={{ padding: 56 }}>
-                                <Users size={40} className="empty-state-icon" />
-                                <p className="empty-state-title">Sin usuarios registrados</p>
-                                <p className="empty-state-desc">Los usuarios se registran desde tu app usando los endpoints de Auth</p>
-                                <button className="btn btn-outline btn-sm" onClick={() => setTab('docs')}>
-                                    <Code size={13} />Ver snippets de código
+                        {someSelected && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '6px 16px', border: '1px solid var(--danger)', background: 'rgba(239, 68, 68, 0.05)', borderRadius: 12, animation: 'fadeIn 0.2s ease' }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger)' }}>{selected.size} usuarios seleccionados</span>
+                                <button className="btn btn-sm" onClick={deleteSelected} disabled={!!actionLoading} style={{ background: 'var(--danger)', color: '#fff', border: 'none', height: 32 }}>
+                                    {actionLoading === 'delete' ? <span className="spinner spinner-sm" /> : 'Eliminar'}
                                 </button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())} style={{ height: 32 }}>Cancelar</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Table View */}
+                    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        {loading && !users.length ? (
+                            <div style={{ padding: 100, textAlign: 'center' }}>
+                                <span className="spinner" style={{ width: 40, height: 40, borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
+                            </div>
+                        ) : filteredUsers.length === 0 ? (
+                            <div style={{ padding: 100, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+                                <div style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                                    <Users size={40} />
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Sin usuarios registrados</h3>
+                                    <p style={{ color: 'var(--text-secondary)', maxWidth: 320, margin: '0 auto' }}>
+                                        {searchTerm ? 'No se encontraron usuarios con esos criterios.' : 'Tus usuarios finales aparecerán aquí una vez que se registren a través de tu aplicación.'}
+                                    </p>
+                                </div>
                             </div>
                         ) : (
-                            <div className="table-wrap">
-                                <table className="table">
-                                    <thead>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead style={{ background: 'var(--bg-surface)' }}>
                                         <tr>
-                                            {/* Select-all checkbox */}
-                                            <th style={{ width: 36, paddingRight: 0 }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={allSelected}
-                                                    onChange={toggleAll}
-                                                    style={{ cursor: 'pointer', accentColor: 'var(--brand)', width: 14, height: 14 }}
-                                                />
+                                            <th style={{ width: 48, padding: '16px 24px', textAlign: 'center' }}>
+                                                <div
+                                                    onClick={toggleAll}
+                                                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    {allSelected ? <CheckCircle style={{ color: 'var(--brand)' }} size={18} /> : <div style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid var(--border)' }} />}
+                                                </div>
                                             </th>
-                                            <th>Usuario</th>
-                                            <th>Rol</th>
-                                            <th>Estado</th>
-                                            <th>Registro</th>
-                                            <th style={{ textAlign: 'right' }}>Acciones</th>
+                                            <th style={{ textAlign: 'left', padding: '16px 12px', fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Perfil</th>
+                                            <th style={{ textAlign: 'left', padding: '16px 12px', fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rol Aplicación</th>
+                                            <th style={{ textAlign: 'left', padding: '16px 12px', fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Estado de Cuenta</th>
+                                            <th style={{ textAlign: 'left', padding: '16px 12px', fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Registrado el</th>
+                                            <th style={{ textAlign: 'right', padding: '16px 24px', fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {users.map(u => {
+                                        {filteredUsers.map((u, i) => {
                                             const isSelected = selected.has(u.id);
-                                            const isTogglingThis = actionLoading === u.id;
+                                            const isWorking = actionLoading === u.id;
                                             return (
-                                                <tr key={u.id}
-                                                    style={{ background: isSelected ? 'rgba(62,207,142,.06)' : undefined, cursor: 'default' }}>
-                                                    {/* Row checkbox */}
-                                                    <td style={{ paddingRight: 0 }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={() => toggleOne(u.id)}
-                                                            style={{ cursor: 'pointer', accentColor: 'var(--brand)', width: 14, height: 14 }}
-                                                        />
+                                                <tr key={u.id} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)', background: isSelected ? 'rgba(16, 185, 129, 0.03)' : 'transparent', transition: 'background 0.2s' }}>
+                                                    <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                                        <div
+                                                            onClick={() => toggleOne(u.id)}
+                                                            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        >
+                                                            {isSelected ? <CheckCircle style={{ color: 'var(--brand)' }} size={18} /> : <div style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', opacity: 0.5 }} />}
+                                                        </div>
                                                     </td>
-                                                    {/* Avatar + email */}
-                                                    <td>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <td style={{ padding: '12px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                             <div style={{
-                                                                width: 30, height: 30, borderRadius: '50%',
-                                                                background: u.is_active ? 'var(--brand-light)' : 'var(--bg-overlay)',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                fontSize: 13, fontWeight: 700,
-                                                                color: u.is_active ? 'var(--brand)' : 'var(--text-muted)',
-                                                                flexShrink: 0,
+                                                                width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                                                                background: u.is_active ? 'var(--brand)' : 'var(--bg-base)',
+                                                                color: u.is_active ? '#fff' : 'var(--text-muted)',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14
                                                             }}>
                                                                 {u.email.charAt(0).toUpperCase()}
                                                             </div>
-                                                            <div>
-                                                                <div style={{ fontWeight: 500, fontSize: 13, color: u.is_active ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                                                    {u.name || '—'}
-                                                                </div>
-                                                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.email}</div>
+                                                            <div style={{ minWidth: 0 }}>
+                                                                <div style={{ fontWeight: 700, fontSize: 14, color: isSelected ? 'var(--brand)' : 'var(--text-primary)', textDecoration: u.is_active ? 'none' : 'line-through', opacity: u.is_active ? 1 : 0.6 }}>{u.name || 'Sin nombre'}</div>
+                                                                <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.email}</div>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td>
-                                                        <span className={`badge badge-${u.role === 'admin' ? 'yellow' : 'gray'}`}>{u.role}</span>
+                                                    <td style={{ padding: '12px' }}>
+                                                        <span style={{
+                                                            fontSize: 10, fontWeight: 800, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 4,
+                                                            background: u.role === 'admin' ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-base)',
+                                                            color: u.role === 'admin' ? 'var(--warning)' : 'var(--text-secondary)',
+                                                            border: u.role === 'admin' ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid var(--border)'
+                                                        }}>
+                                                            {u.role}
+                                                        </span>
                                                     </td>
-                                                    {/* Status */}
-                                                    <td>
-                                                        {u.is_active
-                                                            ? <span className="badge badge-green" style={{ gap: 4 }}><CheckCircle size={10} />Activo</span>
-                                                            : <span className="badge badge-gray" style={{ gap: 4 }}><XCircle size={10} />Inhabilitado</span>}
+                                                    <td style={{ padding: '12px' }}>
+                                                        {u.is_active ? (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--brand)' }}>
+                                                                <CheckCircle2 size={14} /> Activo
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>
+                                                                <ShieldOff size={14} /> Inactivo
+                                                            </div>
+                                                        )}
                                                     </td>
-                                                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                                        {new Date(u.created_at).toLocaleDateString('es-DO')}
+                                                    <td style={{ padding: '12px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                        {new Date(u.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                     </td>
-                                                    {/* Actions */}
-                                                    <td>
-                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
-                                                            {/* Toggle active */}
+                                                    <td style={{ padding: '12px 24px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
                                                             <button
-                                                                title={u.is_active ? 'Inhabilitar usuario' : 'Habilitar usuario'}
-                                                                className="btn btn-ghost btn-icon btn-sm"
-                                                                disabled={isTogglingThis}
-                                                                onClick={() => toggleUser(u.id, u.is_active, u.email)}
-                                                                style={{ color: u.is_active ? 'var(--warning)' : 'var(--brand)' }}>
-                                                                {isTogglingThis
-                                                                    ? <span className="spinner" style={{ width: 12, height: 12 }} />
-                                                                    : u.is_active ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
+                                                                className="btn btn-ghost btn-icon"
+                                                                title={u.is_active ? 'Inhabilitar' : 'Habilitar'}
+                                                                disabled={isWorking}
+                                                                onClick={() => toggleUserStatus(u.id, u.is_active, u.email)}
+                                                                style={{ color: u.is_active ? 'var(--warning)' : 'var(--brand)' }}
+                                                            >
+                                                                {isWorking ? <span className="spinner spinner-sm" /> : (u.is_active ? <ShieldOff size={16} /> : <ShieldCheck size={16} />)}
                                                             </button>
-                                                            {/* Password recovery */}
                                                             <button
-                                                                title="Restablecer contraseña"
-                                                                className="btn btn-ghost btn-icon btn-sm"
-                                                                disabled={isTogglingThis}
+                                                                className="btn btn-ghost btn-icon"
+                                                                title="Recuperación contraseña"
+                                                                disabled={isWorking}
                                                                 onClick={() => handleRecover(u.id, u.email)}
-                                                                style={{ color: 'var(--brand)' }}>
-                                                                {isTogglingThis
-                                                                    ? <span className="spinner" style={{ width: 12, height: 12 }} />
-                                                                    : <Mail size={14} />}
+                                                                style={{ color: 'var(--info)' }}
+                                                            >
+                                                                <Mail size={16} />
                                                             </button>
-                                                            {/* Delete single */}
-
                                                             <button
+                                                                className="btn btn-ghost btn-icon"
                                                                 title="Eliminar usuario"
-                                                                className="btn btn-ghost btn-icon btn-sm"
-                                                                style={{ color: 'var(--text-muted)' }}
-                                                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
-                                                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                                                                onClick={() => {
-                                                                    setSelected(new Set([u.id]));
-                                                                    setTimeout(deleteSelected, 0);
-                                                                }}>
-                                                                <Trash2 size={13} />
+                                                                disabled={isWorking}
+                                                                onClick={() => { setSelected(new Set([u.id])); setTimeout(deleteSelected, 0); }}
+                                                                style={{ color: 'var(--danger)' }}
+                                                            >
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -274,38 +344,90 @@ export default function ProjectAuthPage() {
                                 </table>
                             </div>
                         )}
+                        {/* Table Footer Stats */}
+                        {!loading && users.length > 0 && (
+                            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: 24, fontSize: 12, fontWeight: 600 }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Muestreo: <strong style={{ color: 'var(--text-primary)' }}>{filteredUsers.length} de {users.length}</strong></span>
+                                <span style={{ color: 'var(--text-muted)' }}>Activos: <strong style={{ color: 'var(--brand)' }}>{users.filter(u => u.is_active).length}</strong></span>
+                                <span style={{ color: 'var(--text-muted)' }}>Sesiones: <strong style={{ color: 'var(--info)' }}>Real-time</strong></span>
+                            </div>
+                        )}
                     </div>
-
-                    {/* Stats footer */}
-                    {users.length > 0 && (
-                        <div style={{ marginTop: 12, display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)' }}>
-                            <span>Total: <strong style={{ color: 'var(--text-primary)' }}>{users.length}</strong></span>
-                            <span>Activos: <strong style={{ color: 'var(--brand)' }}>{users.filter(u => u.is_active).length}</strong></span>
-                            <span>Inhabilitados: <strong style={{ color: 'var(--text-muted)' }}>{users.filter(u => !u.is_active).length}</strong></span>
-                        </div>
-                    )}
                 </>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {Object.entries(snippets).map(([title, code]) => (
-                        <div key={title} className="card">
-                            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span className="card-title">{title}</span>
-                                <button className="btn btn-ghost btn-sm" onClick={() => copy(code)}><Copy size={12} />Copiar</button>
-                            </div>
-                            <div className="card-body" style={{ padding: 0 }}>
-                                <pre style={{ margin: 0, padding: '14px 16px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', overflowX: 'auto', color: 'var(--text-primary)', background: 'var(--bg-base)', borderRadius: '0 0 var(--radius) var(--radius)' }}>
+                /* API Section */
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: 24 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {Object.entries(snippets).map(([title, code]) => (
+                            <div key={title} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                                <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h5 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>{title}</h5>
+                                    <button className="btn btn-ghost btn-sm" onClick={() => copyToClipboard(code)} style={{ fontSize: 11, gap: 6 }}>
+                                        <Copy size={12} /> Copiar Código
+                                    </button>
+                                </div>
+                                <pre style={{
+                                    margin: 0, padding: '20px', fontSize: 13, fontFamily: 'var(--font-mono)',
+                                    background: 'var(--bg-base)', color: 'var(--text-primary)', overflowX: 'auto',
+                                    lineHeight: 1.5
+                                }}>
                                     {code}
                                 </pre>
                             </div>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        <div className="card" style={{ background: 'var(--brand)', color: '#fff', border: 'none', padding: '24px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                                <Terminal size={24} />
+                                <h4 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Guía de Implementación</h4>
+                            </div>
+                            <p style={{ fontSize: 14, opacity: 0.9, lineHeight: 1.6, marginBottom: 20 }}>
+                                MatuDB proporciona una solución de autenticación completa. Usa la <strong>Anon Key</strong> en el lado del cliente (Frontend) y la <strong>Service Key</strong> solo en entornos seguros (Backend).
+                            </p>
+                            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                                    <CheckCircle size={16} /> JWT basado en estándar RS256
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                                    <CheckCircle size={16} /> Control de sesión nativo
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                                    <CheckCircle size={16} /> Recuperación vía SMTP integrado
+                                </div>
+                            </div>
                         </div>
-                    ))}
-                    <div style={{ padding: 14, background: 'var(--bg-overlay)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', fontSize: 12 }}>
-                        <AlertTriangle size={13} style={{ verticalAlign: 'middle', marginRight: 6, color: 'var(--warning)' }} />
-                        Reemplaza <code>&lt;anon-key&gt;</code> con la <strong>Anon Key</strong> de tu proyecto (sección <em>API Keys</em>).
+
+                        <div style={{ padding: '20px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: 16, display: 'flex', gap: 16 }}>
+                            <AlertTriangle size={24} style={{ color: 'var(--warning)', flexShrink: 0 }} />
+                            <div>
+                                <h5 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: 'var(--warning)' }}>IMPORTANTE: SEGURIDAD</h5>
+                                <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                    Recuerda que los endpoints de <code>/auth</code> requieren el header <code>apikey</code>. Nunca publiques tus llaves secretas en repositorios públicos.
+                                </p>
+                                <a href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--brand)', marginTop: 12, textDecoration: 'none' }}>
+                                    Leer Documentación <ExternalLink size={12} />
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
+
+            <style>{`
+                .spinner-sm {
+                    width: 14px;
+                    height: 14px;
+                    border: 2px solid rgba(0,0,0,0.1);
+                    border-top-color: var(--brand);
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 }

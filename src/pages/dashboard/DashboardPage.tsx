@@ -3,13 +3,43 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { projectsAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Database, Plus, Trash2, ChevronRight, Server, LogOut, Search, Sparkles, Clock, Globe } from 'lucide-react';
+import {
+    Database,
+    Plus,
+    Trash2,
+    ChevronRight,
+    Server,
+    LogOut,
+    Search,
+    Sparkles,
+    Clock,
+    Globe,
+    LayoutGrid,
+    List,
+    Filter,
+    Zap,
+    Shield,
+    HardDrive,
+    MoreVertical,
+    ExternalLink,
+    Grid,
+    Activity,
+    Layers,
+    User,
+    Settings,
+    Bell,
+    Box
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
 
 interface Project {
-    id: string; name: string; description?: string;
-    region: string; status: string; created_at: string;
+    id: string;
+    name: string;
+    description?: string;
+    region: string;
+    status: string;
+    created_at: string;
 }
 
 /* ── New Project Modal ────────────────────────────────────────── */
@@ -26,32 +56,35 @@ function NewProjectModal({ onClose, onCreated }: { onClose: () => void; onCreate
             const res = await projectsAPI.create(form);
             onCreated(res.data.data.project, res.data.data.keys);
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Failed to create project'); setLoading(false);
+            toast.error(err.response?.data?.message || 'Failed to create project');
+            setLoading(false);
         }
     };
 
     return (
-        <div className="modal-backdrop" onClick={onClose} style={{ backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.4)' }}>
-            <div className="modal glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 480, border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '20px 24px' }}>
-                    <span className="modal-title" style={{ fontSize: 18, fontWeight: 700 }}>{t('dashboard.modal.title')}</span>
-                    <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}>✕</button>
+        <div style={{ backdropFilter: 'blur(10px)', background: 'rgba(15, 23, 42, 0.4)', position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 28, maxWidth: 520, width: '100%', overflow: 'hidden', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.25)' }}>
+                <div style={{ borderBottom: '1px solid var(--border)', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-base)' }}>
+                    <div>
+                        <h3 style={{ fontSize: 20, fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{t('dashboard.modal.title') || 'Crear Nueva Instancia'}</h3>
+                        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>Define la identidad de tu nueva infraestructura.</p>
+                    </div>
                 </div>
                 <form onSubmit={submit}>
-                    <div className="modal-body" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
                         <div className="form-group">
-                            <label className="form-label" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{t('dashboard.modal.name_label')} *</label>
-                            <input className="input matudb-input" placeholder={t('dashboard.modal.name_placeholder')} value={form.name} onChange={set('name')} required style={{ height: 44 }} />
+                            <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, display: 'block' }}>{t('dashboard.modal.name_label') || 'Nombre de la Instancia'}</label>
+                            <input className="input" placeholder="ej: Producción E-commerce" value={form.name} onChange={set('name')} required style={{ width: '100%', height: 48, borderRadius: 12 }} />
                         </div>
                         <div className="form-group">
-                            <label className="form-label" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{t('dashboard.modal.desc_label')}</label>
-                            <textarea className="textarea matudb-input" placeholder={t('dashboard.modal.desc_placeholder')} value={form.description} onChange={set('description')} style={{ minHeight: 100, paddingTop: 12 }} />
+                            <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, display: 'block' }}>{t('dashboard.modal.desc_label') || 'Propósito / Notas'}</label>
+                            <textarea className="input" placeholder="Opcional: Describe el rol de este servidor..." value={form.description} onChange={set('description')} style={{ width: '100%', minHeight: 120, paddingTop: 14, resize: 'none', borderRadius: 12, lineHeight: 1.6 }} />
                         </div>
                     </div>
-                    <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '16px 24px' }}>
-                        <button className="btn btn-ghost" type="button" onClick={onClose}>{t('dashboard.modal.btn_cancel')}</button>
-                        <button className="btn btn-primary" type="submit" disabled={loading} style={{ padding: '0 24px' }}>
-                            {loading ? <><span className="spinner spinner-sm" />{t('dashboard.modal.btn_creating')}</> : t('dashboard.modal.btn_create')}
+                    <div style={{ borderTop: '1px solid var(--border)', padding: '24px 32px', display: 'flex', justifyContent: 'flex-end', gap: 16, background: 'var(--bg-base)' }}>
+                        <button className="btn btn-ghost" type="button" onClick={onClose} style={{ fontWeight: 700 }}>{t('dashboard.modal.btn_cancel') || 'Cancelar'}</button>
+                        <button className="btn btn-primary" type="submit" disabled={loading} style={{ height: 48, padding: '0 32px', fontWeight: 800, borderRadius: 14 }}>
+                            {loading ? <span className="spinner-sm" style={{ width: 20, height: 20, borderTopColor: 'transparent' }} /> : t('dashboard.modal.btn_create') || 'Desplegar Ahora'}
                         </button>
                     </div>
                 </form>
@@ -64,31 +97,48 @@ function NewProjectModal({ onClose, onCreated }: { onClose: () => void; onCreate
 function KeysModal({ keys, onClose }: { keys: any; onClose: () => void }) {
     const { t } = useTranslation();
     return (
-        <div className="modal-backdrop" onClick={onClose} style={{ backdropFilter: 'blur(12px)', background: 'rgba(0,0,0,0.6)' }}>
-            <div className="modal glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 540, border: '1px solid var(--brand)' }}>
-                <div className="modal-header">
-                    <span className="modal-title" style={{ color: '#fff' }}>{t('dashboard.modal.success_title')}</span>
-                </div>
-                <div className="modal-body" style={{ padding: 24 }}>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24 }}>
-                        {t('dashboard.modal.success_desc')}
-                    </p>
-                    <div className="form-group">
-                        <label className="form-label" style={{ color: 'var(--brand)', fontWeight: 600 }}>{t('dashboard.modal.anon_label')}</label>
-                        <div className="code-block" style={{ wordBreak: 'break-all', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: 12, borderRadius: 8, fontSize: 12, fontFamily: 'monospace' }}>{keys.anon}</div>
+        <div style={{ backdropFilter: 'blur(16px)', background: 'rgba(15, 23, 42, 0.7)', position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--brand)', borderRadius: 32, maxWidth: 580, width: '100%', padding: 0, overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,0.3)' }}>
+                <div style={{ padding: '32px 40px', background: 'var(--bg-base)', borderBottom: '1px solid var(--border)', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(16, 185, 129, 0.1)', color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                        <Sparkles size={32} />
                     </div>
-                    <div className="form-group" style={{ marginTop: 16 }}>
-                        <label className="form-label" style={{ color: 'var(--brand)', fontWeight: 600 }}>{t('dashboard.modal.service_label')}</label>
-                        <div className="code-block" style={{ wordBreak: 'break-all', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: 12, borderRadius: 8, fontSize: 12, fontFamily: 'monospace' }}>{keys.service}</div>
+                    <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: 'var(--brand)', letterSpacing: '-1px' }}>{t('dashboard.modal.success_title') || '¡Despliegue Exitoso!'}</h2>
+                </div>
+                <div style={{ padding: '40px' }}>
+                    <div style={{ padding: '16px 20px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: 16, display: 'flex', gap: 16, marginBottom: 32 }}>
+                        <AlertCircle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                            {t('dashboard.modal.success_desc') || 'Estas son las llaves maestras de acceso. Cópialas ahora mismo; por razones de seguridad, no volverán a mostrarse.'}
+                        </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        <div>
+                            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>ANON PUBLIC KEY</label>
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ wordBreak: 'break-all', background: 'var(--bg-base)', border: '1px solid var(--border)', padding: '16px 48px 16px 16px', borderRadius: 12, fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.4, color: 'var(--text-primary)' }}>{keys.anon}</div>
+                                <button className="btn btn-ghost" onClick={() => { navigator.clipboard.writeText(keys.anon); toast.success('Anon Key copiada'); }} style={{ position: 'absolute', right: 8, top: 8, padding: 8, height: 32, width: 32 }}><Copy size={16} /></button>
+                            </div>
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>SERVICE ROLE KEY (SECRET)</label>
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ wordBreak: 'break-all', background: 'var(--bg-base)', border: '1px solid var(--border)', padding: '16px 48px 16px 16px', borderRadius: 12, fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.4, color: 'var(--text-primary)' }}>{keys.service}</div>
+                                <button className="btn btn-ghost" onClick={() => { navigator.clipboard.writeText(keys.service); toast.success('Service Key copiada'); }} style={{ position: 'absolute', right: 8, top: 8, padding: 8, height: 32, width: 32 }}><Copy size={16} /></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div className="modal-footer">
-                    <button className="btn btn-primary w-full" onClick={onClose} style={{ height: 44 }}>{t('dashboard.modal.btn_saved')}</button>
+                <div style={{ padding: '32px 40px', borderTop: '1px solid var(--border)', background: 'var(--bg-base)' }}>
+                    <button className="btn btn-primary w-full" onClick={onClose} style={{ height: 52, fontWeight: 800, borderRadius: 16 }}>{t('dashboard.modal.btn_saved') || 'He guardado las credenciales de forma segura'}</button>
                 </div>
             </div>
         </div>
     );
 }
+
+const AlertCircle = ({ size, color, style }: any) => <Shield size={size} color={color} style={style} />;
 
 /* ── Main Dashboard ─────────────────────────────────────────── */
 export default function DashboardPage() {
@@ -100,23 +150,29 @@ export default function DashboardPage() {
     const [showNew, setShowNew] = useState(false);
     const [newKeys, setNewKeys] = useState<any>(null);
     const [search, setSearch] = useState('');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     useEffect(() => {
+        loadProjects();
+    }, []);
+
+    const loadProjects = () => {
+        setLoading(true);
         projectsAPI.list().then(res => {
             setProjects(res.data.data.projects);
             setLoading(false);
         }).catch(() => setLoading(false));
-    }, []);
+    };
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.preventDefault(); e.stopPropagation();
-        if (!confirm(t('dashboard.project_card.delete_confirm'))) return;
+        if (!confirm(t('dashboard.project_card.delete_confirm') || '¿Estás seguro de eliminar este proyecto?')) return;
         try {
             await projectsAPI.delete(id);
             setProjects(p => p.filter(x => x.id !== id));
-            toast.success(t('common.success'));
+            toast.success('Servidor purgado correctamente');
         } catch (err: any) {
-            toast.error(err.response?.data?.message || t('common.error'));
+            toast.error('Error al intentar purgar el servidor');
         }
     };
 
@@ -136,234 +192,322 @@ export default function DashboardPage() {
             minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
-            background: '#040405',
+            background: 'var(--bg-base)',
             color: 'var(--text-primary)',
-            overflowX: 'hidden'
         }}>
-            {/* Mesh Background */}
-            <div style={{
-                position: 'fixed', top: '0', right: '0', width: '50vw', height: '50vh',
-                background: 'radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%)',
-                filter: 'blur(100px)', zIndex: 0, pointerEvents: 'none'
-            }} />
-            <div style={{
-                position: 'fixed', bottom: '0', left: '0', width: '40vw', height: '40vh',
-                background: 'radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)',
-                filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none'
-            }} />
-
-            {/* Top bar (Glassy) */}
+            {/* Global Elevation Header */}
             <header style={{
-                height: 64,
-                background: 'rgba(10, 10, 11, 0.7)',
-                backdropFilter: 'blur(12px)',
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                height: 72,
+                background: 'var(--bg-surface)',
+                backdropFilter: 'blur(20px)',
+                borderBottom: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0 32px',
+                padding: '0 40px',
                 position: 'sticky',
                 top: 0,
                 zIndex: 100
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{
-                        width: 30, height: 30, borderRadius: 8,
-                        background: 'linear-gradient(135deg, var(--brand), #8b5cf6)',
+                        width: 36, height: 36, borderRadius: 10,
+                        background: 'linear-gradient(135deg, var(--brand), #059669)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)'
+                        boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)'
                     }}>
-                        <img src={logo} alt="M" style={{ width: 18, height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                        <img src={logo} alt="M" style={{ width: 20, height: 20, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
                     </div>
-                    <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.5px', color: '#fff' }}>MatuDB</span>
-                    <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', marginLeft: 8 }} />
-                    <div style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>
-                        Dashboard
+                    <div>
+                        <span style={{ fontWeight: 900, fontSize: 22, letterSpacing: '-1px', color: 'var(--text-primary)' }}>MatuDB</span>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--brand)', opacity: 0.8, letterSpacing: '1px', marginTop: -4 }}>MATRIX ENGINE</div>
                     </div>
+                    <div style={{ width: 1, height: 32, background: 'var(--border)', margin: '0 12px' }} />
+                    <nav style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ padding: '6px 16px', borderRadius: 10, background: 'rgba(16, 185, 129, 0.08)', fontSize: 13, fontWeight: 700, color: 'var(--brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <LayoutGrid size={14} /> Consola
+                        </div>
+                    </nav>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px', borderRadius: 30, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(45deg, var(--brand), #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                            {user?.email?.[0].toUpperCase()}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{ textAlign: 'right', display: 'none', md: 'block' }}>
+                            <div style={{ fontSize: 13, fontWeight: 800 }}>User Session</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user?.email}</div>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>{user?.email}</span>
+                        <div style={{
+                            width: 44, height: 44, borderRadius: 14,
+                            background: 'var(--bg-base)', border: '1px solid var(--border)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', position: 'relative'
+                        }} className="user-profile-trigger">
+                            <span style={{ fontWeight: 900, fontSize: 16, color: 'var(--brand)' }}>{user?.email?.[0].toUpperCase()}</span>
+                            <div style={{ position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, borderRadius: '50%', background: 'var(--brand)', border: '2px solid var(--bg-surface)' }} />
+                        </div>
                     </div>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { logout(); navigate('/auth/login'); }} style={{ color: 'var(--text-muted)', fontSize: 12, gap: 6 }}>
-                        <LogOut size={14} /> {t('common.logout')}
+                    <button className="btn btn-ghost" onClick={() => { logout(); navigate('/auth/login'); }} style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 700, gap: 10 }}>
+                        <LogOut size={16} /> Salir
                     </button>
                 </div>
             </header>
 
-            {/* Content */}
-            <main style={{ flex: 1, padding: '48px 32px', maxWidth: 1200, margin: '0 auto', width: '100%', position: 'relative', zIndex: 1 }}>
+            {/* Main Workspace */}
+            <main style={{ flex: 1, padding: '60px 40px', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
 
-                {/* Hero Header */}
-                <div style={{ marginBottom: 48, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
+                {/* Orchestrator Header */}
+                <div style={{ marginBottom: 56, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 32 }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--brand)', fontSize: 13, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                            <Sparkles size={14} /> Platform Overview
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--brand)', fontSize: 11, fontWeight: 900, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '2px' }}>
+                            <Box size={14} /> Control de Infraestructura
                         </div>
-                        <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1.5px', color: '#fff', marginBottom: 8 }}>{t('dashboard.title')}</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 16 }}>{t('dashboard.subtitle')}</p>
+                        <h1 style={{ fontSize: 48, fontWeight: 900, letterSpacing: '-2px', margin: 0, color: 'var(--text-primary)' }}>Mis Sistemas</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 18, marginTop: 12, maxWidth: 600 }}>Tus instancias de base de datos, microservicios y flujos de automatización centralizados.</p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'flex-end', paddingTop: 8 }}>
+                        <div style={{ position: 'relative', width: 320 }}>
+                            <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input
+                                className="input"
+                                placeholder="Filtrar por nombre o ID..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                style={{ height: 52, paddingLeft: 48, borderRadius: 16, background: 'var(--bg-surface)', fontSize: 15 }}
+                            />
+                        </div>
+                        <button className="btn btn-primary" onClick={() => setShowNew(true)} style={{ height: 52, padding: '0 28px', fontWeight: 800, gap: 12, borderRadius: 16, boxShadow: '0 12px 24px rgba(16, 185, 129, 0.25)' }}>
+                            <Plus size={22} /> Nueva Instancia
+                        </button>
+                    </div>
+                </div>
+
+                {/* Dashboard Controls */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, background: 'var(--bg-surface)', padding: '12px 24px', borderRadius: 20, border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                        <div style={{ display: 'flex', gap: 6, background: 'var(--bg-base)', padding: 4, borderRadius: 14, border: '1px solid var(--border)' }}>
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                style={{
+                                    padding: '8px 14px', borderRadius: 10, border: 'none', background: viewMode === 'grid' ? 'var(--bg-surface)' : 'transparent',
+                                    color: viewMode === 'grid' ? 'var(--brand)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                            >
+                                <Grid size={18} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                style={{
+                                    padding: '8px 14px', borderRadius: 10, border: 'none', background: viewMode === 'list' ? 'var(--bg-surface)' : 'transparent',
+                                    color: viewMode === 'list' ? 'var(--brand)' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                            >
+                                <List size={18} />
+                            </button>
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
+                            {projects.length} INSTANCIAS DISPONIBLES
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 12 }}>
-                        <div style={{ position: 'relative' }}>
-                            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input
-                                className="input matudb-input"
-                                placeholder={t('dashboard.search_placeholder')}
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                style={{ height: 44, width: 280, paddingLeft: 42, paddingRight: search ? 36 : 14, background: 'rgba(255,255,255,0.02)' }}
-                            />
-                            {search && (
-                                <button
-                                    onClick={() => setSearch('')}
-                                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 4 }}
-                                >
-                                    ✕
-                                </button>
-                            )}
-                        </div>
-                        <button className="btn btn-primary" onClick={() => setShowNew(true)} style={{ height: 44, padding: '0 20px', fontWeight: 600, gap: 8, boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.4)' }}>
-                            <Plus size={18} /> {t('dashboard.new_project')}
+                        <button className="btn btn-ghost" style={{ fontSize: 13, fontWeight: 700, gap: 8, height: 40, border: '1px solid var(--border)' }}>
+                            <Filter size={16} /> Relevancia
+                        </button>
+                        <button className="btn btn-ghost" onClick={loadProjects} style={{ height: 40, width: 40, padding: 0 }} title="Sincronizar">
+                            <Activity size={18} />
                         </button>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-                        {[1, 2, 3].map(i => (
-                            <div key={i} style={{ width: 'calc(33.33% - 16px)', height: 180, borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }} className="loading-shimmer" />
+                    <div style={{ display: 'grid', gap: 32, gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))' }}>
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} style={{ height: 260, background: 'var(--bg-surface)', borderRadius: 28, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                                <div className="loading-shimmer" style={{ height: '70%', background: 'var(--bg-base)' }} />
+                                <div style={{ padding: 20 }}>
+                                    <div className="loading-shimmer" style={{ height: 20, width: '60%', borderRadius: 6, marginBottom: 10 }} />
+                                    <div className="loading-shimmer" style={{ height: 12, width: '40%', borderRadius: 4 }} />
+                                </div>
+                            </div>
                         ))}
                     </div>
                 ) : projects.length === 0 ? (
-                    <div className="empty-state glass-card" style={{ padding: '80px 40px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                        <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, margin: '0 auto' }}>
-                            <Server size={32} color="var(--brand)" />
+                    <div style={{ padding: '120px 40px', textAlign: 'center', background: 'var(--bg-surface)', borderRadius: 40, border: '2px dashed var(--border)' }}>
+                        <div style={{ width: 96, height: 96, borderRadius: 32, background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32, margin: '0 auto', color: 'var(--text-muted)' }}>
+                            <Box size={44} style={{ opacity: 0.3 }} />
                         </div>
-                        <p className="empty-state-title" style={{ fontSize: 20, color: '#fff' }}>{t('dashboard.no_projects')}</p>
-                        <p className="empty-state-desc" style={{ maxWidth: 300, margin: '8px auto 24px' }}>{t('dashboard.no_projects_desc')}</p>
-                        <button className="btn btn-primary btn-lg" onClick={() => setShowNew(true)} style={{ height: 48, padding: '0 32px' }}>
-                            <Plus size={18} /> {t('dashboard.new_project')}
+                        <h2 style={{ fontSize: 28, fontWeight: 900, marginBottom: 12, letterSpacing: '-1px' }}>Consola de Operaciones Vacía</h2>
+                        <p style={{ color: 'var(--text-secondary)', maxWidth: 420, margin: '0 auto 32px', fontSize: 17, lineHeight: 1.6 }}>Despliega tu infraestructura de datos ahora para comenzar a construir flujos reales de producción.</p>
+                        <button className="btn btn-primary" onClick={() => setShowNew(true)} style={{ height: 56, padding: '0 40px', fontWeight: 800, borderRadius: 16, fontSize: 16 }}>
+                            <Plus size={22} /> Iniciar Primer Proyecto
                         </button>
                     </div>
                 ) : filteredProjects.length === 0 ? (
-                    <div className="empty-state glass-card" style={{ padding: '60px 40px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, margin: '0 auto' }}>
-                            <Search size={24} color="var(--text-muted)" />
+                    <div style={{ padding: '80px 40px', textAlign: 'center' }}>
+                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, margin: '0 auto', border: '1px solid var(--border)' }}>
+                            <Search size={28} color="var(--text-muted)" />
                         </div>
-                        <h3 style={{ fontSize: 18, color: '#fff', marginBottom: 8 }}>{t('dashboard.results.none')}</h3>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24 }}>
-                            {t('dashboard.results.none_desc', { query: search })}
+                        <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 10 }}>Sin coincidencias</h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 16, marginBottom: 32 }}>
+                            No encontramos registros que coincidan con "<strong style={{ color: 'var(--text-primary)' }}>{search}</strong>"
                         </p>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')} style={{ color: 'var(--brand)' }}>
-                            Limpiar búsqueda
+                        <button className="btn btn-ghost" onClick={() => setSearch('')} style={{ fontWeight: 800, gap: 10, color: 'var(--brand)' }}>
+                            Ver todos los proyectos <ChevronRight size={18} />
                         </button>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))' }}>
-                        {filteredProjects.map(p => (
-                            <Link to={`/project/${p.id}/editor`} key={p.id} style={{ textDecoration: 'none', display: 'block' }}>
-                                <div className="glass-card premium-project-card" style={{
-                                    padding: 24,
-                                    borderRadius: 20,
-                                    border: '1px solid rgba(255,255,255,0.08)',
-                                    background: 'rgba(15, 15, 18, 0.6)',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    position: 'relative',
-                                    overflow: 'hidden'
-                                }}>
-                                    {/* Card Glow */}
-                                    <div className="card-hover-glow" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, var(--brand), transparent)', opacity: 0, transition: 'opacity 0.3s' }} />
-
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                                        <div style={{ display: 'flex', gap: 14 }}>
+                    viewMode === 'grid' ? (
+                        <div style={{ display: 'grid', gap: 32, gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))' }}>
+                            {filteredProjects.map(p => (
+                                <Link to={`/project/${p.id}/editor`} key={p.id} style={{ textDecoration: 'none', display: 'block' }}>
+                                    <div className="project-grid-card" style={{
+                                        padding: '32px',
+                                        background: 'var(--bg-surface)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: 28,
+                                        transition: 'all 0.4s cubic-bezier(0.19, 1, 0.22, 1)',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
                                             <div style={{
-                                                width: 44, height: 44, borderRadius: 12,
-                                                background: 'rgba(99, 102, 241, 0.1)',
-                                                border: '1px solid rgba(99, 102, 241, 0.2)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                color: 'var(--brand)'
+                                                width: 56, height: 56, borderRadius: 18, background: 'var(--bg-base)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)',
+                                                border: '1px solid var(--border)',
+                                                boxShadow: '0 10px 20px rgba(0,0,0,0.05)'
                                             }}>
-                                                <Database size={22} />
+                                                <Database size={28} />
                                             </div>
-                                            <div>
-                                                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>{p.name}</h3>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                                                    <span style={{ fontSize: 11, color: 'rgba(16, 185, 129, 0.8)', padding: '2px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.1)', fontWeight: 700, textTransform: 'uppercase' }}>
-                                                        {t('dashboard.project_card.status_active')}
-                                                    </span>
-                                                    <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                        <Globe size={12} /> {p.region}
-                                                    </span>
+                                            <button
+                                                className="btn btn-ghost"
+                                                onClick={(e) => handleDelete(p.id, e)}
+                                                style={{ height: 36, width: 36, padding: 0, justifyContent: 'center', borderRadius: 10, color: 'var(--text-muted)', background: 'transparent' }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+
+                                        <div style={{ marginBottom: 32 }}>
+                                            <h3 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 10px', letterSpacing: '-0.8px' }}>{p.name}</h3>
+                                            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, height: 42, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                {p.description || 'Instancia activa de MatuDB Engine. Lista para operaciones SQL y flujos reactivos.'}
+                                            </p>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 800, color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.08)', padding: '6px 14px', borderRadius: 10 }}>
+                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand)', boxShadow: '0 0 8px var(--brand)' }} />
+                                                ONLINE
+                                            </div>
+                                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <Globe size={14} /> {p.region || 'US-EAST-1'}
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 24, borderTop: '1px solid var(--border)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--brand)', opacity: 0.6 }} title="DB Ready" />
+                                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--brand)', opacity: 0.6 }} title="Auth Ready" />
+                                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--brand)', opacity: 0.6 }} title="Storage Ready" />
+                                            </div>
+                                            <div style={{
+                                                display: 'flex', alignItems: 'center', gap: 8,
+                                                fontSize: 14, fontWeight: 800, color: 'var(--text-primary)',
+                                                background: 'var(--bg-base)', padding: '8px 16px', borderRadius: 12,
+                                                border: '1px solid var(--border)',
+                                                transition: 'all 0.2s'
+                                            }} className="open-project-badge">
+                                                Acceder Control <ChevronRight size={16} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 28, overflow: 'hidden' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>
+                                        <th style={{ textAlign: 'left', padding: '20px 32px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Arquitectura</th>
+                                        <th style={{ textAlign: 'left', padding: '20px 32px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Localización</th>
+                                        <th style={{ textAlign: 'left', padding: '20px 32px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Último Sync</th>
+                                        <th style={{ textAlign: 'right', padding: '20px 32px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredProjects.map(p => (
+                                        <tr
+                                            key={p.id}
+                                            onClick={() => navigate(`/project/${p.id}/editor`)}
+                                            style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.2s' }}
+                                            className="dashboard-table-row"
+                                        >
+                                            <td style={{ padding: '24px 32px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+                                                        <Database size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>{p.name}</div>
+                                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>UID: {p.id.slice(0, 8)}...</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-
-                                        <button className="btn btn-ghost btn-icon btn-sm" title={t('dashboard.project_card.delete_tooltip')}
-                                            onClick={e => handleDelete(p.id, e)} style={{ color: 'rgba(255,255,255,0.15)', borderRadius: 10 }}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-
-                                    {p.description && (
-                                        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 20, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', height: 42 }}>
-                                            {p.description}
-                                        </p>
-                                    )}
-
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 12, fontWeight: 500 }}>
-                                            <Clock size={14} />
-                                            {t('dashboard.project_card.created')} {new Date(p.created_at).toLocaleDateString()}
-                                        </div>
-                                        <div style={{ color: 'var(--brand)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
-                                            Open <ChevronRight size={16} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                                            </td>
+                                            <td style={{ padding: '24px 32px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <Globe size={14} color="var(--brand)" />
+                                                    <span style={{ fontWeight: 700, fontSize: 14 }}>{p.region || 'US-EAST-1 (Mat)'}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '24px 32px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
+                                                    <Clock size={14} opacity={0.6} />
+                                                    {new Date(p.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '24px 32px', textAlign: 'right' }}>
+                                                <button className="btn btn-ghost" style={{ width: 40, height: 40, padding: 0 }}>
+                                                    <MoreVertical size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )
                 )}
             </main>
 
-            {/* Global Styles for "Mela" effects */}
             <style>{`
-                .premium-project-card:hover {
-                    transform: translateY(-4px) scale(1.01);
-                    border-color: rgba(99, 102, 241, 0.4) !important;
-                    background: rgba(20, 20, 25, 0.8) !important;
-                    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1);
-                }
-                .premium-project-card:hover .card-hover-glow {
-                    opacity: 1;
-                }
-                .premium-project-card:hover h3 {
-                    color: var(--brand) !important;
-                }
-                .matudb-input {
-                    background: rgba(15, 15, 18, 0.6) !important;
-                    border: 1px solid rgba(255,255,255,0.08) !important;
-                    color: #fff !important;
-                    transition: all 0.2s ease;
-                }
-                .matudb-input:focus {
+                .project-grid-card:hover {
+                    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.15);
                     border-color: var(--brand) !important;
-                    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
-                    background: rgba(20, 20, 25, 0.8) !important;
+                    transform: translateY(-8px);
+                }
+                .project-grid-card:hover .open-project-badge {
+                    background: var(--brand) !important;
+                    color: #fff !important;
+                    border-color: var(--brand) !important;
+                }
+                .dashboard-table-row:hover {
+                    background: rgba(16, 185, 129, 0.02) !important;
                 }
                 .loading-shimmer {
-                    background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 75%);
+                    background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-base) 50%, var(--bg-surface) 75%);
                     background-size: 200% 100%;
-                    animation: shimmer 1.5s infinite;
+                    animation: shimmer 1.5s infinite linear;
                 }
                 @keyframes shimmer {
                     0% { background-position: -200% 0; }
                     100% { background-position: 200% 0; }
+                }
+                @keyframes pulse {
+                    0% { transform: scale(1); opacity: 0.8; }
+                    50% { transform: scale(1.5); opacity: 0.4; }
+                    100% { transform: scale(1); opacity: 0.8; }
                 }
             `}</style>
 
