@@ -161,7 +161,7 @@ export default function NotificationsPage() {
                                     }}
                                 >
                                     <div style={{ minWidth: 0 }}>
-                                        <div style={{ fontWeight: 700, fontSize: 14, color: selectedAppId === app.id ? 'var(--brand)' : 'var(--text-primary)', textBreak: 'break-all' }}>{app.name}</div>
+                                        <div style={{ fontWeight: 700, fontSize: 14, color: selectedAppId === app.id ? 'var(--brand)' : 'var(--text-primary)', wordBreak: 'break-all' }}>{app.name}</div>
                                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {app.api_key.slice(0, 16)}...
                                         </div>

@@ -4,7 +4,7 @@ import {
     Globe, Plus, Rocket, ExternalLink, Clock,
     Terminal, Monitor, Server, Shield, Cpu,
     ChevronRight, CheckCircle2, History, Activity,
-    Box, Layout, Settings, RefreshCw
+    Box, Layout, Settings, RefreshCw, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';

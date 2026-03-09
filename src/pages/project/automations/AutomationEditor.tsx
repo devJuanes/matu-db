@@ -20,7 +20,7 @@ import {
     MessageSquare, ClipboardList, X, Play, Settings, Clock,
     ChevronRight, Activity, Sparkles, Layout, Cpu,
     Layers, Link as LinkIcon, AlertCircle, Info, Trash2,
-    Code, Terminal, Bell, Bot
+    Code, Terminal, Bell, Bot, CheckSquare
 } from 'lucide-react';
 
 // --- Custom Nodes Definition ---
@@ -426,7 +426,7 @@ export default function AutomationEditor() {
                             <div style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
                                 <div>
                                     <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--brand)', marginBottom: 2 }}>CONFIGURACIÓN</div>
-                                    <div style={{ fontWeight: 800, fontSize: 16 }}>{selectedNode.data.label}</div>
+                                    <div style={{ fontWeight: 800, fontSize: 16 }}>{String(selectedNode.data.label ?? '')}</div>
                                 </div>
                                 <button className="btn btn-ghost" onClick={() => setSelectedNode(null)} style={{ padding: 8 }}><X size={20} /></button>
                             </div>

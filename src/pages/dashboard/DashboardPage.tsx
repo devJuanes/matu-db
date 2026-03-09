@@ -28,7 +28,8 @@ import {
     User,
     Settings,
     Bell,
-    Box
+    Box,
+    Copy
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
@@ -232,7 +233,7 @@ export default function DashboardPage() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ textAlign: 'right', display: 'none', md: 'block' }}>
+                        <div style={{ textAlign: 'right', display: 'none' }}>
                             <div style={{ fontSize: 13, fontWeight: 800 }}>User Session</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user?.email}</div>
                         </div>
