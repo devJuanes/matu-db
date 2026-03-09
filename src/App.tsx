@@ -16,6 +16,9 @@ import ProjectAuthPage from './pages/project/ProjectAuthPage';
 import DatabasePage from './pages/project/DatabasePage';
 import AppDeployPage from './pages/project/AppDeployPage';
 import TemplatesPage from './pages/project/TemplatesPage';
+import NotificationsPage from './pages/project/NotificationsPage';
+import AutomationsList from './pages/project/automations/AutomationsList';
+import AutomationEditor from './pages/project/automations/AutomationEditor';
 import MatriculaPage from './modules/matricula/MatriculaPage';
 import LandingPage from './pages/LandingPage';
 import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, BlogPage } from './pages/marketing/MarketingPages';
@@ -95,8 +98,11 @@ export default function App() {
           <Route path="storage" element={<StoragePage />} />
           <Route path="auth" element={<ProjectAuthPage />} />
           <Route path="apps" element={<AppDeployPage />} />
+          <Route path="automations" element={<AutomationsList />} />
+          <Route path="automations/:automationId" element={<AutomationEditor />} />
           <Route path="keys" element={<ApiKeysPage />} />
           <Route path="templates" element={<TemplatesPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 

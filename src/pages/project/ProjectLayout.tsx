@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
 import { projectsAPI } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
-import { Database, Table2, Terminal, Key, Settings, LogOut, Home, HardDrive, Users, ChevronDown, ChevronRight, Activity, Sparkles, Globe } from 'lucide-react';
+import { Database, Table2, Terminal, Key, Settings, LogOut, Home, HardDrive, Users, ChevronDown, ChevronRight, Activity, Sparkles, Globe, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
 
@@ -23,9 +23,11 @@ export default function ProjectLayout() {
         { to: 'sql', label: t('sidebar.sql'), icon: Terminal },
         { to: 'database', label: t('sidebar.database'), icon: Database },
         { to: 'storage', label: t('sidebar.storage'), icon: HardDrive },
+        { to: 'automations', label: 'Automatizaciones', icon: Zap },
         { to: 'apps', label: 'Aplicaciones', icon: Globe },
         { to: 'auth', label: t('sidebar.auth'), icon: Users },
         { to: 'keys', label: t('sidebar.keys'), icon: Key },
+        { to: 'notifications', label: 'Notificaciones', icon: Sparkles },
         { to: 'templates', label: 'Plantillas', icon: Sparkles },
         { to: 'settings', label: t('sidebar.settings'), icon: Settings },
     ];

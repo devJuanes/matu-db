@@ -92,3 +92,25 @@ export const templatesAPI = {
     delete: (pid: string, id: string) => api.delete(`/projects/${pid}/templates/${id}`),
     send: (pid: string, data: { templateSlug: string, to: string, variables?: any }) => api.post(`/projects/${pid}/templates/send`, data),
 };
+
+// ── Automations ───────────────────────────────────────────
+export const automationsAPI = {
+    list: (pid: string) => api.get(`/projects/${pid}/automations`),
+    create: (pid: string, data: any) => api.post(`/projects/${pid}/automations`, data),
+    get: (pid: string, id: string) => api.get(`/projects/${pid}/automations/${id}`),
+    update: (pid: string, id: string, data: any) => api.put(`/projects/${pid}/automations/${id}`, data),
+    delete: (pid: string, id: string) => api.delete(`/projects/${pid}/automations/${id}`),
+    triggerWebhook: (pid: string, id: string, data: any) => api.post(`/projects/${pid}/automations/${id}/webhook`, data),
+    getTables: (pid: string) => api.get(`/projects/${pid}/automations/helper/tables`),
+    getTableColumns: (pid: string, table: string) => api.get(`/projects/${pid}/automations/helper/tables/${table}/columns`),
+    getLogs: (pid: string, id: string) => api.get(`/projects/${pid}/automations/${id}/logs`),
+};
+
+// ── Notifications ──────────────────────────────────────────
+export const notificationsAPI = {
+    getApps: (pid: string) => api.get(`/projects/${pid}/notifications/apps`),
+    createApp: (pid: string, data: any) => api.post(`/projects/${pid}/notifications/apps`, data),
+    registerToken: (pid: string, data: any) => api.post(`/projects/${pid}/notifications/register`, data),
+    send: (pid: string, data: any) => api.post(`/projects/${pid}/notifications/send`, data),
+    getLogs: (pid: string, appId: string) => api.get(`/projects/${pid}/notifications/apps/${appId}/logs`),
+};
