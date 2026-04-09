@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { automationsAPI } from '../../../lib/api';
 import toast from 'react-hot-toast';
 import {
-    Plus, Zap, Trash2, Edit3, Settings, Play,
-    Clock, Activity, MoreVertical, ChevronRight,
-    ArrowRight, Sparkles, Layout, ToggleLeft, ToggleRight
+    Plus, Zap, Trash2, Edit3, Settings,
+    Clock, Activity, ChevronRight,
+    Sparkles, Layout, ToggleLeft, ToggleRight, Upload, Download
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -16,6 +16,7 @@ export default function AutomationsList() {
     const [automations, setAutomations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     const loadAutomations = async () => {
         try {
@@ -61,6 +62,44 @@ export default function AutomationsList() {
         }
     };
 
+    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text) as { data?: Record<string, unknown> } & Record<string, unknown>;
+            const payload = (parsed.data ?? parsed) as Record<string, unknown>;
+            if (!payload.nodes_config || !(payload.nodes_config as { nodes?: unknown }).nodes) {
+                toast.error('JSON inválido: falta nodes_config.nodes');
+                return;
+            }
+            const res = await automationsAPI.import(projectId!, payload);
+            const newId = res.data.data?.id as string;
+            toast.success('Flujo importado');
+            loadAutomations();
+            if (newId) navigate(`/project/${projectId}/automations/${newId}`);
+        } catch {
+            toast.error('No se pudo importar el JSON');
+        }
+    };
+
+    const handleExport = async (id: string, flowName: string) => {
+        try {
+            const res = await automationsAPI.export(projectId!, id);
+            const payload = res.data.data;
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `flow-${(flowName || 'automation').replace(/\s+/g, '-')}-${id.slice(0, 8)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toast.success('JSON descargado');
+        } catch {
+            toast.error('No se pudo exportar');
+        }
+    };
+
     const toggleStatus = async (automation: any) => {
         const newStatus = automation.status === 'active' ? 'inactive' : 'active';
         try {
@@ -83,22 +122,33 @@ export default function AutomationsList() {
                     <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', margin: 0 }}>Automatizaciones</h1>
                     <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontSize: 16 }}>Construye arquitecturas reactivas y flujos lógicos potentes.</p>
                 </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={handleCreate}
-                    disabled={creating}
-                    style={{
-                        gap: 10,
-                        height: 48,
-                        padding: '0 24px',
-                        borderRadius: 14,
-                        fontWeight: 700,
-                        boxShadow: '0 10px 20px rgba(16, 185, 129, 0.2)'
-                    }}
-                >
-                    {creating ? <span className="spinner-sm" style={{ width: 18, height: 18 }} /> : <Plus size={20} />}
-                    Crear Algoritmo
-                </button>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'flex-end' }}>
+                    <input ref={importInputRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={handleImportFile} />
+                    <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => importInputRef.current?.click()}
+                        style={{ height: 48, padding: '0 20px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center' }}
+                    >
+                        <Upload size={18} /> Importar JSON
+                    </button>
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleCreate}
+                        disabled={creating}
+                        style={{
+                            gap: 10,
+                            height: 48,
+                            padding: '0 24px',
+                            borderRadius: 14,
+                            fontWeight: 700,
+                            boxShadow: '0 10px 20px rgba(16, 185, 129, 0.2)'
+                        }}
+                    >
+                        {creating ? <span className="spinner-sm" style={{ width: 18, height: 18 }} /> : <Plus size={20} />}
+                        Crear Algoritmo
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -125,9 +175,14 @@ export default function AutomationsList() {
                         <h3 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>El motor está inactivo</h3>
                         <p style={{ color: 'var(--text-secondary)', maxWidth: 320, lineHeight: 1.6 }}>Crea tu primer flujo para automatizar tareas repetitivas y conectar con servicios externos.</p>
                     </div>
-                    <button className="btn btn-outline" onClick={handleCreate} style={{ height: 40, padding: '0 24px' }}>
-                        Documentación de Flujos
-                    </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                        <button type="button" className="btn btn-outline" onClick={() => importInputRef.current?.click()} style={{ height: 40, padding: '0 24px', gap: 8, display: 'inline-flex', alignItems: 'center' }}>
+                            <Upload size={16} /> Importar JSON
+                        </button>
+                        <button type="button" className="btn btn-primary" onClick={handleCreate} style={{ height: 40, padding: '0 24px' }}>
+                            Crear primer flujo
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -201,6 +256,16 @@ export default function AutomationsList() {
                                     </div>
 
                                     <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
+
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost"
+                                        title="Exportar JSON"
+                                        onClick={() => handleExport(auto.id, auto.name)}
+                                        style={{ width: 40, height: 40, padding: 0, justifyContent: 'center', borderRadius: 12 }}
+                                    >
+                                        <Download size={18} />
+                                    </button>
 
                                     <button
                                         className="btn btn-ghost"

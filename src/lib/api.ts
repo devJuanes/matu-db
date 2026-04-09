@@ -97,7 +97,12 @@ export const templatesAPI = {
 export const automationsAPI = {
     list: (pid: string) => api.get(`/projects/${pid}/automations`),
     create: (pid: string, data: any) => api.post(`/projects/${pid}/automations`, data),
+    /** Importar flujo desde JSON (exportVersion + nodes_config + edges_config) */
+    import: (pid: string, payload: Record<string, unknown>) =>
+        api.post(`/projects/${pid}/automations/import`, payload),
     get: (pid: string, id: string) => api.get(`/projects/${pid}/automations/${id}`),
+    /** Exportar definición portable (sin id de BD) */
+    export: (pid: string, id: string) => api.get(`/projects/${pid}/automations/${id}/export`),
     update: (pid: string, id: string, data: any) => api.put(`/projects/${pid}/automations/${id}`, data),
     delete: (pid: string, id: string) => api.delete(`/projects/${pid}/automations/${id}`),
     triggerWebhook: (pid: string, id: string, data: any) => api.post(`/projects/${pid}/automations/${id}/webhook`, data),

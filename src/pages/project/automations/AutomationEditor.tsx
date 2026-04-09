@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ReactFlow,
@@ -20,7 +20,7 @@ import {
     MessageSquare, ClipboardList, X, Play, Settings, Clock,
     ChevronRight, Activity, Sparkles, Layout, Cpu,
     Layers, Link as LinkIcon, AlertCircle, Info, Trash2,
-    Code, Terminal, Bell, Bot, CheckSquare
+    Code, Terminal, Bell, Bot, CheckSquare, Download, Upload
 } from 'lucide-react';
 
 // --- Custom Nodes Definition ---
@@ -79,6 +79,7 @@ const ConditionNode = ({ data, isConnectable }: any) => {
             case 'gt': return '>';
             case 'lt': return '<';
             case 'contains': return 'contiene';
+            case 'changed_to': return '→';
             default: return op || '??';
         }
     };
@@ -155,6 +156,12 @@ export default function AutomationEditor() {
     const [currentTableColumns, setCurrentTableColumns] = useState<any[]>([]);
     const [logs, setLogs] = useState<any[]>([]);
     const [showLogs, setShowLogs] = useState(false);
+    const importFileRef = useRef<HTMLInputElement>(null);
+
+    const apiBase = (import.meta.env.VITE_MATUDB_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
+    const webhookUrl = projectId && automationId
+        ? `${apiBase}/projects/${projectId}/automations/${automationId}/webhook`
+        : '';
 
     const onNodeClick = useCallback(async (_: any, node: Node) => {
         setSelectedNode(node);
@@ -247,6 +254,43 @@ export default function AutomationEditor() {
         }
     };
 
+    const handleExportJson = async () => {
+        try {
+            const res = await automationsAPI.export(projectId!, automationId!);
+            const payload = res.data.data;
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `flow-${(name || 'automation').replace(/\s+/g, '-')}-${automationId!.slice(0, 8)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toast.success('JSON exportado');
+        } catch {
+            toast.error('No se pudo exportar');
+        }
+    };
+
+    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text) as { data?: Record<string, unknown> } & Record<string, unknown>;
+            const payload = (parsed.data ?? parsed) as Record<string, unknown>;
+            if (!payload.nodes_config || !(payload.nodes_config as { nodes?: unknown }).nodes) {
+                toast.error('JSON inválido: falta nodes_config.nodes');
+                return;
+            }
+            const res = await automationsAPI.import(projectId!, payload);
+            const newId = res.data.data?.id as string;
+            toast.success('Flujo importado');
+            if (newId) navigate(`/project/${projectId}/automations/${newId}`);
+        } catch {
+            toast.error('No se pudo importar el JSON');
+        }
+    };
+
     const addNode = (type: string, label: string, icon: string, description?: string) => {
         const newNode: Node = {
             id: `node_${Date.now()}`,
@@ -291,6 +335,13 @@ export default function AutomationEditor() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <input ref={importFileRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={handleImportFile} />
+                    <button type="button" className="btn btn-ghost" onClick={() => importFileRef.current?.click()} style={{ gap: 8, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                        <Upload size={16} /> Importar JSON
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={handleExportJson} style={{ gap: 8, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                        <Download size={16} /> Exportar JSON
+                    </button>
                     <button className="btn btn-ghost" onClick={loadLogs} style={{ gap: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
                         <Clock size={16} /> Auditoría
                     </button>
@@ -409,8 +460,8 @@ export default function AutomationEditor() {
                             }}>
                                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--brand)', animation: 'pulse 1.5s infinite' }} />
                                 <div>
-                                    <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Workflow Endpoint</div>
-                                    <code style={{ fontSize: 11, color: 'var(--brand)', fontWeight: 700 }}>/api/v1/hook/{automationId?.slice(0, 4)}...</code>
+                                    <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Webhook POST</div>
+                                    <code style={{ fontSize: 10, color: 'var(--brand)', fontWeight: 700, wordBreak: 'break-all', display: 'block', maxWidth: 280 }}>{webhookUrl}</code>
                                 </div>
                             </div>
                         </Panel>
@@ -487,11 +538,55 @@ export default function AutomationEditor() {
                                                 <option value="gt">Mayor que (&gt;)</option>
                                                 <option value="lt">Menor que (&lt;)</option>
                                                 <option value="contains">Contiene el texto</option>
+                                                <option value="changed_to">Cambió a (UPDATE)</option>
                                             </select>
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label">Valor de Referencia</label>
                                             <input className="input" value={(selectedNode.data.value as string) || ''} onChange={e => updateNodeData({ value: e.target.value })} placeholder="Valor esperado" style={{ height: 44 }} />
+                                        </div>
+                                        {selectedNode.data.operator === 'changed_to' && (
+                                            <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                                                Solo en <strong>UPDATE</strong>: se cumple si el campo pasó de otro valor a este. Requiere fila con <code style={{ fontSize: 11 }}>_old</code> en el motor (API MatuDB).
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+
+                                {selectedNode.type === 'action' && selectedNode.data.icon === 'mail' && (
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">Para (correo)</label>
+                                            <input
+                                                className="input"
+                                                value={(selectedNode.data.to as string) || ''}
+                                                onChange={e => updateNodeData({ to: e.target.value })}
+                                                placeholder="{adminNotifyEmail} o {user_email}"
+                                                style={{ height: 44 }}
+                                            />
+                                            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.45 }}>
+                                                Placeholders: <code>{'{adminNotifyEmail}'}</code> (env API), columnas de la fila como <code>{'{user_email}'}</code>, <code>{'{userName}'}</code>, etc.
+                                            </p>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Asunto</label>
+                                            <input
+                                                className="input"
+                                                value={(selectedNode.data.subject as string) || ''}
+                                                onChange={e => updateNodeData({ subject: e.target.value })}
+                                                placeholder="[Soporte] Nuevo chat"
+                                                style={{ height: 44 }}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Cuerpo (texto)</label>
+                                            <textarea
+                                                className="input"
+                                                style={{ height: 180, padding: 16, lineHeight: 1.6 }}
+                                                value={(selectedNode.data.body as string) || ''}
+                                                onChange={e => updateNodeData({ body: e.target.value })}
+                                                placeholder={'Hola {user_name},\n\nDetalle: {id}...'}
+                                            />
                                         </div>
                                     </>
                                 )}
