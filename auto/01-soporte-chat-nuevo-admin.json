@@ -1,0 +1,49 @@
+{
+  "exportVersion": 1,
+  "name": "Soporte: nuevo chat en vivo → admin (email)",
+  "trigger_type": "table:support_live_chats:INSERT",
+  "status": "inactive",
+  "nodes_config": {
+    "nodes": [
+      {
+        "id": "t1",
+        "type": "tableTrigger",
+        "position": { "x": 240, "y": 0 },
+        "data": {
+          "label": "INSERT support_live_chats",
+          "tableName": "support_live_chats",
+          "event": "INSERT"
+        }
+      },
+      {
+        "id": "c1",
+        "type": "condition",
+        "position": { "x": 240, "y": 120 },
+        "data": {
+          "label": "Estado pending",
+          "field": "status",
+          "operator": "eq",
+          "value": "pending"
+        }
+      },
+      {
+        "id": "e1",
+        "type": "action",
+        "position": { "x": 240, "y": 260 },
+        "data": {
+          "label": "Correo al admin",
+          "icon": "mail",
+          "to": "{adminNotifyEmail}",
+          "subject": "[Soporte] Nuevo chat en vivo pendiente",
+          "body": "Nueva solicitud de chat en vivo.\n\nUsuario: {user_name}\nID usuario: {user_id}\nCorreo usuario: {user_email}\nOrigen (client_source): {client_source}\nID chat: {id}\nEstado: {status}\n\nRevisa en Torre de Control / panel admin."
+        }
+      }
+    ]
+  },
+  "edges_config": {
+    "edges": [
+      { "id": "a1", "source": "t1", "target": "c1", "animated": true },
+      { "id": "a2", "source": "c1", "sourceHandle": "true", "target": "e1", "animated": true }
+    ]
+  }
+}

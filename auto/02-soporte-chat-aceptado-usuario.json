@@ -1,0 +1,61 @@
+{
+  "exportVersion": 1,
+  "name": "Soporte: chat aceptado → usuario (email)",
+  "trigger_type": "table:support_live_chats:UPDATE",
+  "status": "inactive",
+  "nodes_config": {
+    "nodes": [
+      {
+        "id": "t1",
+        "type": "tableTrigger",
+        "position": { "x": 240, "y": 0 },
+        "data": {
+          "label": "UPDATE support_live_chats",
+          "tableName": "support_live_chats",
+          "event": "UPDATE"
+        }
+      },
+      {
+        "id": "c1",
+        "type": "condition",
+        "position": { "x": 240, "y": 100 },
+        "data": {
+          "label": "Pasó a active",
+          "field": "status",
+          "operator": "changed_to",
+          "value": "active"
+        }
+      },
+      {
+        "id": "c2",
+        "type": "condition",
+        "position": { "x": 240, "y": 220 },
+        "data": {
+          "label": "Tiene email",
+          "field": "user_email",
+          "operator": "contains",
+          "value": "@"
+        }
+      },
+      {
+        "id": "e1",
+        "type": "action",
+        "position": { "x": 240, "y": 360 },
+        "data": {
+          "label": "Correo al usuario",
+          "icon": "mail",
+          "to": "{user_email}",
+          "subject": "Tu chat de soporte fue aceptado",
+          "body": "Hola {user_name},\n\nUn agente ya aceptó tu chat de soporte en vivo. Puedes volver a la app para continuar la conversación.\n\nID de sesión: {id}\n\n— Equipo de soporte"
+        }
+      }
+    ]
+  },
+  "edges_config": {
+    "edges": [
+      { "id": "b1", "source": "t1", "target": "c1", "animated": true },
+      { "id": "b2", "source": "c1", "sourceHandle": "true", "target": "c2", "animated": true },
+      { "id": "b3", "source": "c2", "sourceHandle": "true", "target": "e1", "animated": true }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "exportVersion": 1,
+  "name": "Soporte: nuevo ticket (HuacApp) → admin (email)",
+  "trigger_type": "table:supportticket:INSERT",
+  "status": "inactive",
+  "nodes_config": {
+    "nodes": [
+      {
+        "id": "t1",
+        "type": "tableTrigger",
+        "position": { "x": 240, "y": 0 },
+        "data": {
+          "label": "INSERT SupportTicket",
+          "tableName": "SupportTicket",
+          "event": "INSERT"
+        }
+      },
+      {
+        "id": "c1",
+        "type": "condition",
+        "position": { "x": 240, "y": 120 },
+        "data": {
+          "label": "Pendiente",
+          "field": "status",
+          "operator": "eq",
+          "value": "pending"
+        }
+      },
+      {
+        "id": "e1",
+        "type": "action",
+        "position": { "x": 240, "y": 260 },
+        "data": {
+          "label": "Correo al admin",
+          "icon": "mail",
+          "to": "{adminNotifyEmail}",
+          "subject": "[Soporte] Nuevo ticket {ticketNumber}",
+          "body": "Nuevo ticket de soporte.\n\nNúmero: {ticketNumber}\nUsuario: {userName}\nEmail: {userEmail}\nAsunto: {subject}\nPrioridad: {priority}\nCategoría: {category}\n\nMensaje:\n{message}\n\nID: {id}"
+        }
+      }
+    ]
+  },
+  "edges_config": {
+    "edges": [
+      { "id": "d1", "source": "t1", "target": "c1", "animated": true },
+      { "id": "d2", "source": "c1", "sourceHandle": "true", "target": "e1", "animated": true }
+    ]
+  }
+}
