@@ -76,6 +76,22 @@ export function buildColumnDataSql(
     return `-- Columna "${columnName}" de "${tableName}"\nINSERT INTO "${tableName}" ("${columnName}") VALUES\n${vals};\n`;
 }
 
+/** INSERT de filas completas (todas las columnas visibles en el editor). */
+export function buildRowsInsertSql(
+    tableName: string,
+    columnMetas: TableColumnMeta[],
+    rows: Record<string, unknown>[],
+): string {
+    if (!rows.length) return `-- Sin filas para exportar\n`;
+    const colNames = columnMetas.map((c) => c.name);
+    const quotedCols = colNames.map((n) => `"${n}"`).join(', ');
+    const valueLines = rows.map((row) => {
+        const vals = colNames.map((n) => sqlStringLiteral(row[n]));
+        return `(${vals.join(', ')})`;
+    });
+    return `-- ${rows.length} fila(s) seleccionada(s)\nINSERT INTO "${tableName}" (${quotedCols}) VALUES\n${valueLines.join(',\n')};\n`;
+}
+
 export function downloadTextFile(filename: string, content: string, mime = 'text/plain') {
     const blob = new Blob([content], { type: mime });
     const a = document.createElement('a');

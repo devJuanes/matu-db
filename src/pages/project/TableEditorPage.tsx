@@ -15,6 +15,7 @@ import {
     rowKeyToFilters,
     buildCreateTableSql,
     buildColumnDataSql,
+    buildRowsInsertSql,
     downloadTextFile,
     type TableColumnMeta,
 } from './tableEditorHelpers';
@@ -143,6 +144,11 @@ function CreateTableModal({ projectId, onClose, onCreated }: { projectId: string
 }
 
 // ── Editable Cell ──────────────────────────────────────────
+/** Identificadores: nunca editables (rompería integridad). */
+function isIdentityColumn(col: TableColumnMeta & { name: string }): boolean {
+    return col.name === 'id' || col.is_primary_key === true;
+}
+
 function EditableCell({ value, col, rowFilters, projectId, table, onSaved }: {
     value: unknown;
     col: TableColumnMeta & { name: string };
@@ -153,16 +159,15 @@ function EditableCell({ value, col, rowFilters, projectId, table, onSaved }: {
 }) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState('');
-    const [saving, setSaving] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const isUUID = typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(value);
     const canMutate = rowFilters != null && Object.keys(rowFilters).length > 0;
-    const isReadOnly =
-        !canMutate ||
-        col.name === 'created_at' ||
-        col.name === 'updated_at' ||
-        col.is_primary_key === true;
+    const identity = isIdentityColumn(col);
+    const canEdit =
+        canMutate &&
+        col.name !== 'created_at' &&
+        col.name !== 'updated_at' &&
+        !identity;
 
     const fullStr = value === null || value === undefined
         ? ''
@@ -170,48 +175,70 @@ function EditableCell({ value, col, rowFilters, projectId, table, onSaved }: {
             ? JSON.stringify(value)
             : String(value);
 
-    const copyFullId = async (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const copyValue = async (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (!fullStr) {
+            toast.error('Nada que copiar');
+            return;
+        }
         try {
             await navigator.clipboard.writeText(fullStr);
-            toast.success('Copiado al portapapeles');
+            toast.success('Copiado');
         } catch {
             toast.error('No se pudo copiar');
         }
     };
 
+    const onCellClick = () => {
+        if (identity && fullStr) {
+            void copyValue();
+            return;
+        }
+        if (canEdit) {
+            setDraft(value === null || value === undefined ? '' : String(value));
+            setEditing(true);
+            setTimeout(() => inputRef.current?.focus(), 30);
+        }
+    };
+
     const display = () => {
-        if (value === null || value === undefined) return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 11, opacity: 0.5 }}>NULL</span>;
-        if (value === true) return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>TRUE</span>;
-        if (value === false) return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>FALSE</span>;
+        if (value === null || value === undefined) {
+            return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 11, opacity: 0.5 }}>NULL</span>;
+        }
+        if (value === true) {
+            return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>TRUE</span>;
+        }
+        if (value === false) {
+            return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>FALSE</span>;
+        }
         const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        if (isUUID || (col.is_primary_key && str.length > 14)) {
+        if (identity) {
             return (
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.85, letterSpacing: '-0.5px' }} title={str}>
-                    {str.slice(0, 8)}…
+                <span
+                    className="matudb-cell-ellipsis matudb-id-cell"
+                    title={str}
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.9 }}
+                >
+                    {str}
                 </span>
             );
         }
-        return <span style={{ fontSize: 13, fontWeight: 500 }}>{str}</span>;
-    };
-
-    const startEdit = () => {
-        if (isReadOnly) return;
-        setDraft(value === null || value === undefined ? '' : String(value));
-        setEditing(true);
-        setTimeout(() => inputRef.current?.focus(), 30);
+        return (
+            <span className="matudb-cell-ellipsis" title={str} style={{ fontSize: 13, fontWeight: 500 }}>
+                {str}
+            </span>
+        );
     };
 
     const save = async () => {
-        if (draft === String(value)) { setEditing(false); return; }
-        setSaving(true);
+        if (!canEdit || draft === String(value)) { setEditing(false); return; }
         try {
             if (!rowFilters) return;
             await dataAPI.update(projectId, table, { [col.name]: draft || null }, rowFilters);
             onSaved();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Error al guardar');
-        } finally { setSaving(false); setEditing(false); }
+        } finally { setEditing(false); }
     };
 
     const onKey = (e: React.KeyboardEvent) => {
@@ -219,9 +246,9 @@ function EditableCell({ value, col, rowFilters, projectId, table, onSaved }: {
         if (e.key === 'Escape') setEditing(false);
     };
 
-    if (editing) {
+    if (editing && canEdit) {
         return (
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 120, height: 38, padding: '4px' }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0, height: 38, padding: '4px' }}>
                 <input
                     ref={inputRef}
                     className="input"
@@ -229,7 +256,7 @@ function EditableCell({ value, col, rowFilters, projectId, table, onSaved }: {
                     onChange={e => setDraft(e.target.value)}
                     onKeyDown={onKey}
                     onBlur={save}
-                    style={{ padding: '0 10px', height: '100%', fontSize: 13, flex: 1, border: '2px solid var(--brand)', outline: 'none', background: 'var(--bg-main)', borderRadius: 6 }}
+                    style={{ padding: '0 10px', height: '100%', fontSize: 13, flex: 1, minWidth: 0, border: '2px solid var(--brand)', outline: 'none', background: 'var(--bg-main)', borderRadius: 6 }}
                 />
             </div>
         );
@@ -237,33 +264,37 @@ function EditableCell({ value, col, rowFilters, projectId, table, onSaved }: {
 
     return (
         <div
-            onClick={startEdit}
-            title={isReadOnly ? fullStr : undefined}
+            role={identity && fullStr ? 'button' : undefined}
+            tabIndex={identity && fullStr ? 0 : undefined}
+            onClick={onCellClick}
+            onKeyDown={identity && fullStr ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void copyValue(); } } : undefined}
+            title={identity && fullStr ? 'Clic para copiar (no editable)' : canEdit ? 'Clic para editar' : fullStr || undefined}
             style={{
-                cursor: isReadOnly ? 'default' : 'text',
-                padding: '0 10px 0 16px',
+                cursor: identity && fullStr ? 'pointer' : canEdit ? 'text' : 'default',
+                padding: '0 8px 0 12px',
                 height: 48,
-                transition: 'all 0.15s',
+                transition: 'background 0.15s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 6,
                 overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis',
                 borderRight: '1px solid var(--border-soft)',
                 minWidth: 0,
             }}
-            onMouseEnter={e => { if (!isReadOnly) (e.currentTarget as HTMLElement).style.background = 'rgba(16, 185, 129, 0.03)'; }}
+            onMouseEnter={e => {
+                if (canEdit) (e.currentTarget as HTMLElement).style.background = 'rgba(16, 185, 129, 0.03)';
+                else if (identity && fullStr) (e.currentTarget as HTMLElement).style.background = 'rgba(16, 185, 129, 0.06)';
+            }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
-            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{display()}</span>
-            {isReadOnly && col.is_primary_key && fullStr ? (
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>{display()}</span>
+            {identity && fullStr ? (
                 <button
                     type="button"
                     className="btn btn-ghost btn-icon btn-sm"
-                    title="Copiar valor completo"
-                    onClick={copyFullId}
-                    style={{ flexShrink: 0, width: 28, height: 28, padding: 0, opacity: 0.7 }}
+                    title="Copiar"
+                    onClick={copyValue}
+                    style={{ flexShrink: 0, width: 28, height: 28, padding: 0, opacity: 0.75 }}
                 >
                     <Copy size={14} />
                 </button>
@@ -295,7 +326,7 @@ export default function TableEditorPage() {
     const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
     const dataRequestId = useRef(0);
     const colWidthsRef = useRef<Record<string, number>>({});
-    const [, bumpColWidths] = useState(0);
+    const [colWidthsVersion, bumpColWidths] = useState(0);
 
     const widthsStorageKey = (t: string | null) =>
         t && projectId ? `matudb_colw_${projectId}_${t}` : '';
@@ -388,7 +419,7 @@ export default function TableEditorPage() {
         const startW = getColWidth(colName);
         const onMove = (ev: MouseEvent) => {
             const dx = ev.clientX - startX;
-            const nw = Math.max(72, startW + dx);
+            const nw = Math.max(40, startW + dx);
             colWidthsRef.current = { ...colWidthsRef.current, [colName]: nw };
             bumpColWidths(v => v + 1);
         };
@@ -457,6 +488,18 @@ export default function TableEditorPage() {
     };
 
     const pkNames = useMemo(() => getPkColumnNames(columns as TableColumnMeta[]), [columns]);
+
+    const showRowCheckbox = useMemo(
+        () => pkNames.length > 0 && rows.some(r => rowKeyToFilters(r, pkNames) != null),
+        [pkNames, rows],
+    );
+
+    const tableWidthPx = useMemo(() => {
+        let s = showRowCheckbox ? 60 : 0;
+        for (const c of columns) s += getColWidth(c.name);
+        s += 24;
+        return Math.max(s, 320);
+    }, [columns, showRowCheckbox, colWidthsVersion]);
 
     const rowKeys = useMemo(
         () => rows
@@ -527,8 +570,23 @@ export default function TableEditorPage() {
         toast.success('SQL de columna descargado');
     };
 
+    const handleExportSelectedRowsSql = () => {
+        if (!selectedTable || !columns.length) return;
+        if (selected.size === 0) {
+            toast.error('Selecciona al menos una fila');
+            return;
+        }
+        const subset = rows.filter(r => selected.has(getRowKey(r, pkNames)));
+        if (subset.length === 0) {
+            toast.error('No hay filas seleccionadas en esta vista');
+            return;
+        }
+        const sql = buildRowsInsertSql(selectedTable, columns as TableColumnMeta[], subset);
+        downloadTextFile(`${selectedTable}_filas_${Date.now()}.sql`, sql, 'application/sql');
+        toast.success('SQL de filas seleccionadas descargado');
+    };
+
     const filteredTables = tables.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const showRowCheckbox = pkNames.length > 0 && rows.some(r => rowKeyToFilters(r, pkNames) != null);
 
     return (
         <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: 'var(--bg-main)' }}>
@@ -664,10 +722,21 @@ export default function TableEditorPage() {
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 {selected.size > 0 ? (
-                                    <button className="btn btn-primary" onClick={deleteSelected} disabled={deleting} style={{ background: 'var(--danger)', height: 40, padding: '0 20px', fontWeight: 700 }}>
-                                        {deleting ? <RefreshCw size={16} className="spinner" /> : <Trash2 size={16} />}
-                                        Eliminar registros
-                                    </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                        <button
+                                            type="button"
+                                            className="btn btn-ghost"
+                                            onClick={handleExportSelectedRowsSql}
+                                            style={{ height: 40, padding: '0 18px', fontWeight: 700, border: '1px solid var(--border)', gap: 8 }}
+                                            title="INSERT con todas las columnas de las filas seleccionadas"
+                                        >
+                                            <Code2 size={16} /> SQL filas
+                                        </button>
+                                        <button className="btn btn-primary" onClick={deleteSelected} disabled={deleting} style={{ background: 'var(--danger)', height: 40, padding: '0 20px', fontWeight: 700 }}>
+                                            {deleting ? <RefreshCw size={16} className="spinner" /> : <Trash2 size={16} />}
+                                            Eliminar registros
+                                        </button>
+                                    </div>
                                 ) : (
                                     <>
                                         <div style={{ display: 'flex', gap: 4, background: 'var(--bg-base)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', flexWrap: 'wrap' }}>
@@ -736,7 +805,7 @@ export default function TableEditorPage() {
                                 </div>
                             )}
 
-                            <table style={{ minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'auto' }}>
+                            <table style={{ width: tableWidthPx, borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'fixed' }}>
                                 <thead style={{ position: 'sticky', top: 0, zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
                                     <tr style={{ background: 'var(--bg-surface)' }}>
                                         {showRowCheckbox && (
@@ -760,8 +829,7 @@ export default function TableEditorPage() {
                                                     borderBottom: '2px solid var(--border)',
                                                     height: 48,
                                                     width: getColWidth(c.name),
-                                                    minWidth: 72,
-                                                    maxWidth: 640,
+                                                    minWidth: 40,
                                                     verticalAlign: 'middle',
                                                     background: selectedColumn === c.name ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-surface)',
                                                     cursor: 'pointer',
@@ -783,12 +851,13 @@ export default function TableEditorPage() {
                                                     onClick={e => e.stopPropagation()}
                                                     style={{
                                                         position: 'absolute',
-                                                        right: 0,
+                                                        right: -2,
                                                         top: 0,
                                                         bottom: 0,
-                                                        width: 6,
+                                                        width: 12,
+                                                        zIndex: 12,
                                                         cursor: 'col-resize',
-                                                        background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.06))',
+                                                        background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.08))',
                                                     }}
                                                 />
                                             </th>
@@ -827,7 +896,7 @@ export default function TableEditorPage() {
                                                     </td>
                                                 )}
                                                 {columns.map(c => (
-                                                    <td key={c.name} style={{ borderBottom: '1px solid var(--border)', padding: 0, width: getColWidth(c.name), maxWidth: 640 }}>
+                                                    <td key={c.name} style={{ borderBottom: '1px solid var(--border)', padding: 0, width: getColWidth(c.name), minWidth: 40, overflow: 'hidden', verticalAlign: 'middle' }}>
                                                         <EditableCell
                                                             value={row[c.name]}
                                                             col={c as TableColumnMeta & { name: string }}
@@ -886,6 +955,13 @@ export default function TableEditorPage() {
             {showCreate && <CreateTableModal projectId={projectId!} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); loadTables(); }} />}
 
             <style>{`
+                .matudb-cell-ellipsis {
+                    display: block;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    max-width: 100%;
+                }
                 .truncate {
                     overflow: hidden;
                     text-overflow: ellipsis;
