@@ -1,0 +1,48 @@
+{
+  "exportVersion": 1,
+  "name": "Huacas: Task → Completada → WhatsApp + encuesta + PQR",
+  "trigger_type": "table:task:UPDATE",
+  "status": "active",
+  "nodes_config": {
+    "nodes": [
+      {
+        "id": "t1",
+        "type": "tableTrigger",
+        "position": { "x": 240, "y": 0 },
+        "data": {
+          "label": "UPDATE Task",
+          "tableName": "Task",
+          "event": "UPDATE"
+        }
+      },
+      {
+        "id": "c1",
+        "type": "condition",
+        "position": { "x": 240, "y": 120 },
+        "data": {
+          "label": "¿Pasó a Completada?",
+          "field": "status",
+          "operator": "changed_to",
+          "value": "Completada"
+        }
+      },
+      {
+        "id": "a1",
+        "type": "action",
+        "position": { "x": 240, "y": 280 },
+        "data": {
+          "label": "WhatsApp cierre + enlaces",
+          "icon": "whatsapp",
+          "phone": "{clientPhone}",
+          "message": "¡Hola *{clientName}*! 👋\n\nTu servicio con *{technicianName}* ya quedó *completado*.\n📦 Orden: *{orderId}*\n📍 *{address}*\n\n⭐ *Califica tu experiencia* (1 a 5 estrellas) en este enlace:\n{surveyUrl}\n\n📋 *¿Necesitas una queja o PQR?* Abre este enlace:\n{pqrUrl}\n\n¡Gracias por confiar en nosotros!"
+        }
+      }
+    ]
+  },
+  "edges_config": {
+    "edges": [
+      { "id": "e1", "source": "t1", "target": "c1", "animated": true },
+      { "id": "e2", "source": "c1", "sourceHandle": "true", "target": "a1", "animated": true }
+    ]
+  }
+}

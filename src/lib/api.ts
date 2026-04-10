@@ -111,6 +111,13 @@ export const automationsAPI = {
     getLogs: (pid: string, id: string) => api.get(`/projects/${pid}/automations/${id}/logs`),
 };
 
+// ── WhatsApp (sesión global del servidor API, JWT) ─────────
+export const whatsappAPI = {
+    status: () => api.get('/whatsapp/status'),
+    logout: () => api.post('/whatsapp/logout'),
+    restart: () => api.post('/whatsapp/restart'),
+};
+
 // ── Notifications ──────────────────────────────────────────
 export const notificationsAPI = {
     getApps: (pid: string) => api.get(`/projects/${pid}/notifications/apps`),

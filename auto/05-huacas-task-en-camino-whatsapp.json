@@ -1,0 +1,48 @@
+{
+  "exportVersion": 1,
+  "name": "Huacas: Task → En Camino → WhatsApp al cliente",
+  "trigger_type": "table:task:UPDATE",
+  "status": "active",
+  "nodes_config": {
+    "nodes": [
+      {
+        "id": "t1",
+        "type": "tableTrigger",
+        "position": { "x": 240, "y": 0 },
+        "data": {
+          "label": "UPDATE Task",
+          "tableName": "Task",
+          "event": "UPDATE"
+        }
+      },
+      {
+        "id": "c1",
+        "type": "condition",
+        "position": { "x": 240, "y": 120 },
+        "data": {
+          "label": "¿Pasó a En Camino?",
+          "field": "status",
+          "operator": "changed_to",
+          "value": "En Camino"
+        }
+      },
+      {
+        "id": "a1",
+        "type": "action",
+        "position": { "x": 240, "y": 260 },
+        "data": {
+          "label": "WhatsApp al cliente",
+          "icon": "whatsapp",
+          "phone": "{clientPhone}",
+          "message": "Hola *{clientName}*, te informamos que el técnico *{technicianName}* va en camino a *{address}* (orden *{orderId}*). Servicio: *{service}* · Plan: *{internetPlan}*. ¡Gracias por preferirnos!"
+        }
+      }
+    ]
+  },
+  "edges_config": {
+    "edges": [
+      { "id": "e1", "source": "t1", "target": "c1", "animated": true },
+      { "id": "e2", "source": "c1", "sourceHandle": "true", "target": "a1", "animated": true }
+    ]
+  }
+}

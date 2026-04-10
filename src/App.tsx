@@ -19,6 +19,7 @@ import DatabasePage from './pages/project/DatabasePage';
 import AppDeployPage from './pages/project/AppDeployPage';
 import TemplatesPage from './pages/project/TemplatesPage';
 import NotificationsPage from './pages/project/NotificationsPage';
+import WhatsappPage from './pages/project/WhatsappPage';
 import SimulatorPage from './pages/project/SimulatorPage';
 import AutomationsList from './pages/project/automations/AutomationsList';
 import AutomationEditor from './pages/project/automations/AutomationEditor';
@@ -178,6 +179,7 @@ export default function App() {
           <Route path="keys" element={<ApiKeysPage />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="whatsapp" element={<WhatsappPage />} />
           <Route path="simulator" element={<SimulatorPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

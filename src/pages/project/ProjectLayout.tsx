@@ -24,7 +24,8 @@ import {
     Box,
     Shield,
     Mail,
-    MessagesSquare
+    MessagesSquare,
+    MessageCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
@@ -47,6 +48,7 @@ export default function ProjectLayout() {
         { to: 'database', label: t('sidebar.database'), icon: Database },
         { to: 'storage', label: t('sidebar.storage'), icon: HardDrive },
         { to: 'automations', label: 'Automatizaciones', icon: Zap },
+        { to: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
         { to: 'apps', label: 'Aplicaciones', icon: Globe },
         { to: 'auth', label: t('sidebar.auth'), icon: Users },
         { to: 'keys', label: t('sidebar.keys'), icon: Key },
