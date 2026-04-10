@@ -1,0 +1,55 @@
+{
+  "exportVersion": 1,
+  "name": "Bot soporte + humo DB",
+  "category": "support",
+  "status": "idle",
+  "workspace_config": {
+    "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+    "visual": { "patrol": "perimeter", "accent": "#6366f1" }
+  },
+  "suite_config": {
+    "stopOnError": true,
+    "baseUrl": "http://localhost:5173",
+    "cases": [
+      {
+        "id": "db-task-exists",
+        "name": "Proyecto MatuDB: tabla Task accesible",
+        "steps": [
+          {
+            "id": "count-task",
+            "name": "SELECT sobre Task (ajusta el nombre de tabla a tu esquema)",
+            "kind": "sql",
+            "sql": "SELECT COUNT(*)::int AS c FROM \"Task\" LIMIT 1",
+            "minRows": 1
+          }
+        ]
+      },
+      {
+        "id": "torre-or-huac-front",
+        "name": "Front local (torre-control / HuacApp Vite)",
+        "steps": [
+          {
+            "id": "home-200",
+            "kind": "http",
+            "method": "GET",
+            "path": "/",
+            "expectStatus": 200,
+            "timeoutMs": 10000
+          }
+        ]
+      },
+      {
+        "id": "legacy-doc",
+        "name": "Pasos solo documentación (no ejecutan código)",
+        "steps": [
+          {
+            "id": "d1",
+            "kind": "noop",
+            "action": "note",
+            "target": "Útil para describir un flujo manual o futuro E2E con Playwright."
+          }
+        ]
+      }
+    ]
+  }
+}
