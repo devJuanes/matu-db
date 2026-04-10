@@ -122,6 +122,22 @@ export const automationsAPI = {
         api.get(`/projects/${pid}/automations/${id}/logs`, { params }),
 };
 
+// ── Robots (testing / suites, import-export JSON) ─────────
+export const robotsAPI = {
+    list: (pid: string) => api.get(`/projects/${pid}/robots`),
+    create: (pid: string, data: Record<string, unknown>) => api.post(`/projects/${pid}/robots`, data),
+    import: (pid: string, payload: Record<string, unknown>) => api.post(`/projects/${pid}/robots/import`, payload),
+    get: (pid: string, id: string) => api.get(`/projects/${pid}/robots/${id}`),
+    export: (pid: string, id: string) => api.get(`/projects/${pid}/robots/${id}/export`),
+    update: (pid: string, id: string, data: Record<string, unknown>) => api.put(`/projects/${pid}/robots/${id}`, data),
+    delete: (pid: string, id: string) => api.delete(`/projects/${pid}/robots/${id}`),
+    run: (pid: string, id: string) => api.post(`/projects/${pid}/robots/${id}/run`),
+    listRuns: (pid: string, id: string, params?: { limit?: number }) =>
+        api.get(`/projects/${pid}/robots/${id}/runs`, { params }),
+    getRun: (pid: string, robotId: string, runId: string) =>
+        api.get(`/projects/${pid}/robots/${robotId}/runs/${runId}`),
+};
+
 // ── WhatsApp (sesión global del servidor API, JWT) ─────────
 export const whatsappAPI = {
     status: () => api.get('/whatsapp/status'),
