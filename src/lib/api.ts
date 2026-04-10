@@ -32,7 +32,17 @@ export const authAPI = {
     register: (data: any) => api.post('/auth/register', data),
     login: (data: any) => api.post('/auth/login', data),
     me: () => api.get('/auth/me'),
+    forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
+    resetPassword: (token: string, password: string) => api.post('/auth/reset-password', { token, password }),
     recoverUserPassword: (pid: string, uid: string) => api.post(`/projects/${pid}/auth/users/${uid}/recover`),
+};
+
+/** Recuperación de usuarios finales del proyecto (sin apikey en el navegador) */
+export const projectPublicAuthAPI = {
+    forgotPassword: (projectId: string, email: string) =>
+        api.post(`/projects/${projectId}/auth/public/forgot-password`, { email }),
+    completePasswordReset: (projectId: string, token: string, password: string) =>
+        api.post(`/projects/${projectId}/auth/password-reset/complete`, { token, password }),
 };
 
 // ── Projects ──────────────────────────────────────────────
@@ -108,7 +118,8 @@ export const automationsAPI = {
     triggerWebhook: (pid: string, id: string, data: any) => api.post(`/projects/${pid}/automations/${id}/webhook`, data),
     getTables: (pid: string) => api.get(`/projects/${pid}/automations/helper/tables`),
     getTableColumns: (pid: string, table: string) => api.get(`/projects/${pid}/automations/helper/tables/${table}/columns`),
-    getLogs: (pid: string, id: string) => api.get(`/projects/${pid}/automations/${id}/logs`),
+    getLogs: (pid: string, id: string, params?: { limit?: number }) =>
+        api.get(`/projects/${pid}/automations/${id}/logs`, { params }),
 };
 
 // ── WhatsApp (sesión global del servidor API, JWT) ─────────

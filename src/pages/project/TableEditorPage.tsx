@@ -1,15 +1,23 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useOutletContext, useParams } from 'react-router-dom';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { tablesAPI, dataAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
 import {
     Plus, RefreshCw, Trash2, ChevronDown, X,
-    Download, CheckSquare, Square, Check, Search,
-    Table as TableIcon, Filter, MoreVertical, Settings2,
-    Database, Layers, Clock, FileJson, FileText, ChevronLeft, ChevronRight,
-    Info, MoreHorizontal, Settings, Box, Columns, Type, Hash as HashIcon,
-    ToggleLeft, Calendar, Braces, KeyRound, AlignLeft
+    Download, CheckSquare, Square, Search,
+    Table as TableIcon, Filter, Settings2,
+    Database, Layers, FileJson, ChevronLeft, ChevronRight,
+    Columns, Copy, Code2, GripVertical,
 } from 'lucide-react';
+import {
+    getPkColumnNames,
+    getRowKey,
+    rowKeyToFilters,
+    buildCreateTableSql,
+    buildColumnDataSql,
+    downloadTextFile,
+    type TableColumnMeta,
+} from './tableEditorHelpers';
 
 const PG_TYPES = ['text', 'integer', 'bigint', 'float', 'boolean', 'uuid', 'timestamp', 'date', 'json', 'varchar'];
 
@@ -135,8 +143,13 @@ function CreateTableModal({ projectId, onClose, onCreated }: { projectId: string
 }
 
 // ── Editable Cell ──────────────────────────────────────────
-function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
-    value: any; col: any; rowId: string; projectId: string; table: string; onSaved: () => void;
+function EditableCell({ value, col, rowFilters, projectId, table, onSaved }: {
+    value: unknown;
+    col: TableColumnMeta & { name: string };
+    rowFilters: Record<string, unknown> | null;
+    projectId: string;
+    table: string;
+    onSaved: () => void;
 }) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState('');
@@ -144,20 +157,47 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
     const inputRef = useRef<HTMLInputElement>(null);
 
     const isUUID = typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(value);
-    const isReadOnly = col.name === 'id' || col.name === 'created_at' || col.name === 'updated_at';
+    const canMutate = rowFilters != null && Object.keys(rowFilters).length > 0;
+    const isReadOnly =
+        !canMutate ||
+        col.name === 'created_at' ||
+        col.name === 'updated_at' ||
+        col.is_primary_key === true;
+
+    const fullStr = value === null || value === undefined
+        ? ''
+        : typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value);
+
+    const copyFullId = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await navigator.clipboard.writeText(fullStr);
+            toast.success('Copiado al portapapeles');
+        } catch {
+            toast.error('No se pudo copiar');
+        }
+    };
 
     const display = () => {
         if (value === null || value === undefined) return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 11, opacity: 0.5 }}>NULL</span>;
         if (value === true) return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>TRUE</span>;
         if (value === false) return <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.5px' }}>FALSE</span>;
         const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        if (isUUID) return <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.6, letterSpacing: '-0.5px' }}>{str.slice(0, 8)}…</span>;
+        if (isUUID || (col.is_primary_key && str.length > 14)) {
+            return (
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.85, letterSpacing: '-0.5px' }} title={str}>
+                    {str.slice(0, 8)}…
+                </span>
+            );
+        }
         return <span style={{ fontSize: 13, fontWeight: 500 }}>{str}</span>;
     };
 
     const startEdit = () => {
         if (isReadOnly) return;
-        setDraft(value === null ? '' : String(value));
+        setDraft(value === null || value === undefined ? '' : String(value));
         setEditing(true);
         setTimeout(() => inputRef.current?.focus(), 30);
     };
@@ -166,7 +206,8 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
         if (draft === String(value)) { setEditing(false); return; }
         setSaving(true);
         try {
-            await dataAPI.update(projectId, table, { [col.name]: draft || null }, { id: rowId });
+            if (!rowFilters) return;
+            await dataAPI.update(projectId, table, { [col.name]: draft || null }, rowFilters);
             onSaved();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Error al guardar');
@@ -197,22 +238,36 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
     return (
         <div
             onClick={startEdit}
+            title={isReadOnly ? fullStr : undefined}
             style={{
                 cursor: isReadOnly ? 'default' : 'text',
-                padding: '0 16px',
+                padding: '0 10px 0 16px',
                 height: 48,
                 transition: 'all 0.15s',
                 display: 'flex',
                 alignItems: 'center',
+                gap: 8,
                 overflow: 'hidden',
                 whiteSpace: 'nowrap',
                 textOverflow: 'ellipsis',
-                borderRight: '1px solid var(--border-soft)'
+                borderRight: '1px solid var(--border-soft)',
+                minWidth: 0,
             }}
             onMouseEnter={e => { if (!isReadOnly) (e.currentTarget as HTMLElement).style.background = 'rgba(16, 185, 129, 0.03)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
-            {display()}
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{display()}</span>
+            {isReadOnly && col.is_primary_key && fullStr ? (
+                <button
+                    type="button"
+                    className="btn btn-ghost btn-icon btn-sm"
+                    title="Copiar valor completo"
+                    onClick={copyFullId}
+                    style={{ flexShrink: 0, width: 28, height: 28, padding: 0, opacity: 0.7 }}
+                >
+                    <Copy size={14} />
+                </button>
+            ) : null}
         </div>
     );
 }
@@ -220,7 +275,6 @@ function EditableCell({ value, col, rowId, projectId, table, onSaved }: {
 // ── Main Page ──────────────────────────────────────────────
 export default function TableEditorPage() {
     const { projectId } = useParams<{ projectId: string }>();
-    const { project } = useOutletContext<any>();
     const [tables, setTables] = useState<any[]>([]);
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [columns, setColumns] = useState<any[]>([]);
@@ -235,13 +289,16 @@ export default function TableEditorPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCol, setFilterCol] = useState('');
     const [filterVal, setFilterVal] = useState('');
-    const [openTables, setOpenTables] = useState<string[]>(() => {
-        const saved = localStorage.getItem(`openTables_${projectId}`);
-        try {
-            return saved ? JSON.parse(saved) : [];
-        } catch { return []; }
-    });
+    const [openTables, setOpenTables] = useState<string[]>([]);
+    const [openTabsHydrated, setOpenTabsHydrated] = useState(false);
     const [limit, setLimit] = useState(50);
+    const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
+    const dataRequestId = useRef(0);
+    const colWidthsRef = useRef<Record<string, number>>({});
+    const [, bumpColWidths] = useState(0);
+
+    const widthsStorageKey = (t: string | null) =>
+        t && projectId ? `matudb_colw_${projectId}_${t}` : '';
 
     const loadTables = useCallback(() => {
         if (!projectId) return;
@@ -254,16 +311,96 @@ export default function TableEditorPage() {
     useEffect(() => { loadTables(); }, [loadTables]);
 
     useEffect(() => {
-        if (!selectedTable && openTables.length > 0) {
-            selectTable(openTables[0]);
+        if (!projectId) return;
+        try {
+            const raw = localStorage.getItem(`openTables_${projectId}`);
+            const tabs = raw ? JSON.parse(raw) : [];
+            setOpenTables(Array.isArray(tabs) ? tabs : []);
+        } catch {
+            setOpenTables([]);
         }
-    }, []);
+        setOpenTabsHydrated(true);
+    }, [projectId]);
 
     useEffect(() => {
-        if (projectId) {
-            localStorage.setItem(`openTables_${projectId}`, JSON.stringify(openTables));
+        if (!projectId || !openTabsHydrated) return;
+        localStorage.setItem(`openTables_${projectId}`, JSON.stringify(openTables));
+    }, [openTables, projectId, openTabsHydrated]);
+
+    const selectTable = useCallback(async (t: string) => {
+        if (!projectId) return;
+        const reqId = ++dataRequestId.current;
+        setSelectedTable(t);
+        setPage(0);
+        setSelected(new Set());
+        setFilterCol('');
+        setFilterVal('');
+        setSelectedColumn(null);
+        setLoading(true);
+        setOpenTables(prev => (prev.includes(t) ? prev : [...prev, t]));
+        try {
+            const colsRes = await tablesAPI.get(projectId, t);
+            if (reqId !== dataRequestId.current) return;
+            const columnsData = colsRes.data.data.columns as TableColumnMeta[];
+
+            const orderCol = columnsData.find(c => c.name === 'id')?.name
+                ?? columnsData.find(c => c.is_primary_key)?.name;
+            const params: Record<string, unknown> = { limit, offset: 0, count: 'true' };
+            if (orderCol) params.order = `${orderCol}.asc`;
+
+            const rowsRes = await dataAPI.select(projectId, t, params);
+            if (reqId !== dataRequestId.current) return;
+            setColumns(columnsData);
+            setRows(rowsRes.data.data.rows);
+            setTotal(rowsRes.data.data.total);
+        } catch {
+            if (reqId === dataRequestId.current) {
+                toast.error('Error al cargar datos');
+            }
+        } finally {
+            if (reqId === dataRequestId.current) setLoading(false);
         }
-    }, [openTables, projectId]);
+    }, [projectId, limit]);
+
+    useEffect(() => {
+        if (!projectId || !openTabsHydrated || openTables.length === 0 || selectedTable) return;
+        void selectTable(openTables[0]);
+    }, [projectId, openTables, selectedTable, selectTable, openTabsHydrated]);
+
+    useEffect(() => {
+        if (!selectedTable) return;
+        const k = widthsStorageKey(selectedTable);
+        try {
+            const raw = k ? localStorage.getItem(k) : null;
+            colWidthsRef.current = raw ? JSON.parse(raw) : {};
+        } catch {
+            colWidthsRef.current = {};
+        }
+        bumpColWidths(v => v + 1);
+    }, [selectedTable, projectId]);
+
+    const getColWidth = (name: string) => colWidthsRef.current[name] ?? 160;
+
+    const startColResize = (colName: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startW = getColWidth(colName);
+        const onMove = (ev: MouseEvent) => {
+            const dx = ev.clientX - startX;
+            const nw = Math.max(72, startW + dx);
+            colWidthsRef.current = { ...colWidthsRef.current, [colName]: nw };
+            bumpColWidths(v => v + 1);
+        };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            const k = widthsStorageKey(selectedTable);
+            if (k) localStorage.setItem(k, JSON.stringify(colWidthsRef.current));
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    };
 
     const closeTab = (e: React.MouseEvent, t: string) => {
         e.stopPropagation();
@@ -271,8 +408,9 @@ export default function TableEditorPage() {
         setOpenTables(nextOpen);
         if (selectedTable === t) {
             const lastTab = nextOpen[nextOpen.length - 1];
-            if (lastTab) selectTable(lastTab);
+            if (lastTab) void selectTable(lastTab);
             else {
+                dataRequestId.current += 1;
                 setSelectedTable(null);
                 setRows([]);
                 setColumns([]);
@@ -281,48 +419,29 @@ export default function TableEditorPage() {
         }
     };
 
-    const selectTable = async (t: string) => {
-        setSelectedTable(t); setPage(0); setSelected(new Set()); setLoading(true);
-        if (!openTables.includes(t)) {
-            setOpenTables(prev => [...prev, t]);
-        }
-        try {
-            const colsRes = await tablesAPI.get(projectId!, t);
-            const columnsData = colsRes.data.data.columns;
-
-            const hasIdCol = columnsData.some((c: any) => c.name === 'id');
-            const params: any = { limit, offset: 0, count: 'true' };
-            if (hasIdCol) params.order = 'id.asc';
-
-            if (filterCol && filterVal) {
-                params[filterCol] = `ilike.%${filterVal}%`;
-            }
-
-            const rowsRes = await dataAPI.select(projectId!, t, params);
-            setColumns(columnsData);
-            setRows(rowsRes.data.data.rows);
-            setTotal(rowsRes.data.data.total);
-        } catch (err) {
-            toast.error('Error al cargar datos');
-        } finally { setLoading(false); }
-    };
-
-    const loadPage = async (p: number, customLimit?: number) => {
-        if (!selectedTable) return;
+    const loadPage = useCallback(async (p: number, customLimit?: number) => {
+        if (!selectedTable || !projectId) return;
+        const reqId = ++dataRequestId.current;
         const l = customLimit ?? limit;
-        setPage(p); setSelected(new Set()); setLoading(true);
+        setPage(p);
+        setSelected(new Set());
+        setLoading(true);
         try {
-            const hasIdCol = columns.some((c: any) => c.name === 'id');
-            const params: any = { limit: l, offset: p * l, count: 'true' };
-            if (hasIdCol) params.order = 'id.asc';
-
+            const orderCol = columns.find(c => c.name === 'id')?.name
+                ?? columns.find(c => c.is_primary_key)?.name;
+            const params: Record<string, unknown> = { limit: l, offset: p * l, count: 'true' };
+            if (orderCol) params.order = `${orderCol}.asc`;
             if (filterCol && filterVal) {
                 params[filterCol] = `ilike.%${filterVal}%`;
             }
-            const res = await dataAPI.select(projectId!, selectedTable, params);
-            setRows(res.data.data.rows); setTotal(res.data.data.total);
-        } finally { setLoading(false); }
-    };
+            const res = await dataAPI.select(projectId, selectedTable, params);
+            if (reqId !== dataRequestId.current) return;
+            setRows(res.data.data.rows);
+            setTotal(res.data.data.total);
+        } finally {
+            if (reqId === dataRequestId.current) setLoading(false);
+        }
+    }, [selectedTable, projectId, limit, columns, filterCol, filterVal]);
 
     const dropTable = async (t: string, e: React.MouseEvent) => {
         e.preventDefault(); e.stopPropagation();
@@ -337,18 +456,25 @@ export default function TableEditorPage() {
         } catch (err: any) { toast.error('Error al eliminar'); }
     };
 
-    // Selection
-    const allIds = rows.map(r => r.id).filter(Boolean);
-    const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
+    const pkNames = useMemo(() => getPkColumnNames(columns as TableColumnMeta[]), [columns]);
+
+    const rowKeys = useMemo(
+        () => rows
+            .filter(r => rowKeyToFilters(r, pkNames) != null)
+            .map(r => getRowKey(r, pkNames)),
+        [rows, pkNames],
+    );
+
+    const allSelected = rowKeys.length > 0 && rowKeys.every(k => selected.has(k));
     const toggleAll = () => {
         if (allSelected) setSelected(new Set());
-        else setSelected(new Set(allIds));
+        else setSelected(new Set(rowKeys));
     };
-    const toggleRow = (id: string, e: React.MouseEvent) => {
+    const toggleRow = (rowKey: string, e: React.MouseEvent) => {
         e.stopPropagation();
         setSelected(prev => {
             const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
+            next.has(rowKey) ? next.delete(rowKey) : next.add(rowKey);
             return next;
         });
     };
@@ -357,28 +483,52 @@ export default function TableEditorPage() {
         if (!confirm(`¿Eliminar ${selected.size} registro(s)?`)) return;
         setDeleting(true);
         try {
-            for (const id of selected) {
-                await dataAPI.delete(projectId!, selectedTable!, { id });
+            for (const key of selected) {
+                const row = rows.find(r => getRowKey(r, pkNames) === key);
+                if (!row) continue;
+                const filters = rowKeyToFilters(row, pkNames);
+                if (!filters) continue;
+                await dataAPI.delete(projectId!, selectedTable!, filters);
             }
             toast.success(`Registros eliminados`);
             setSelected(new Set());
             await selectTable(selectedTable!);
-        } catch (err: any) {
+        } catch {
             toast.error('Error en eliminación masiva');
         } finally { setDeleting(false); }
     };
 
     const handleExport = (format: 'csv' | 'json') => {
         const toExport = selected.size > 0
-            ? rows.filter(r => selected.has(r.id))
+            ? rows.filter(r => selected.has(getRowKey(r, pkNames)))
             : rows;
         if (toExport.length === 0) { toast.error('Sin datos para procesar'); return; }
         exportData(toExport, format, selectedTable!);
         toast.success(`Despachado en formato ${format.toUpperCase()}`);
     };
 
+    const handleExportDdl = () => {
+        if (!selectedTable || !columns.length) return;
+        const sql = buildCreateTableSql(selectedTable, columns as TableColumnMeta[]);
+        downloadTextFile(`${selectedTable}_schema_${Date.now()}.sql`, sql, 'application/sql');
+        toast.success('DDL descargado');
+    };
+
+    const handleExportColumnSql = () => {
+        if (!selectedTable || !selectedColumn) {
+            toast.error('Selecciona una columna en el encabezado');
+            return;
+        }
+        const subset = selected.size > 0
+            ? rows.filter(r => selected.has(getRowKey(r, pkNames)))
+            : rows;
+        const sql = buildColumnDataSql(selectedTable, selectedColumn, subset);
+        downloadTextFile(`${selectedTable}_${selectedColumn}_${Date.now()}.sql`, sql, 'application/sql');
+        toast.success('SQL de columna descargado');
+    };
+
     const filteredTables = tables.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const hasIds = rows.some(r => r.id);
+    const showRowCheckbox = pkNames.length > 0 && rows.some(r => rowKeyToFilters(r, pkNames) != null);
 
     return (
         <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: 'var(--bg-main)' }}>
@@ -520,12 +670,25 @@ export default function TableEditorPage() {
                                     </button>
                                 ) : (
                                     <>
-                                        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-base)', padding: 4, borderRadius: 10, border: '1px solid var(--border)' }}>
+                                        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-base)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', flexWrap: 'wrap' }}>
                                             <button className="btn btn-ghost btn-sm" onClick={() => handleExport('csv')} style={{ height: 32, padding: '0 12px', fontSize: 12, fontWeight: 700, gap: 6 }}>
                                                 <Download size={12} /> CSV
                                             </button>
                                             <button className="btn btn-ghost btn-sm" onClick={() => handleExport('json')} style={{ height: 32, padding: '0 12px', fontSize: 12, fontWeight: 700, gap: 6 }}>
                                                 <FileJson size={12} /> JSON
+                                            </button>
+                                            <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportDdl} style={{ height: 32, padding: '0 12px', fontSize: 12, fontWeight: 700, gap: 6 }} title="CREATE TABLE sin datos">
+                                                <Code2 size={12} /> DDL
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-ghost btn-sm"
+                                                onClick={handleExportColumnSql}
+                                                disabled={!selectedColumn}
+                                                style={{ height: 32, padding: '0 12px', fontSize: 12, fontWeight: 700, gap: 6 }}
+                                                title={selectedColumn ? `Exportar columna "${selectedColumn}"` : 'Elige una columna'}
+                                            >
+                                                <Code2 size={12} /> SQL columna
                                             </button>
                                         </div>
                                         <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
@@ -556,7 +719,7 @@ export default function TableEditorPage() {
                                     </>
                                 )}
                                 <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
-                                <button className="btn btn-ghost" onClick={() => selectTable(selectedTable)} style={{ height: 40, width: 40, padding: 0, justifyContent: 'center' }}>
+                                <button type="button" className="btn btn-ghost" onClick={() => void loadPage(page)} style={{ height: 40, width: 40, padding: 0, justifyContent: 'center' }} title="Refrescar página actual">
                                     <RefreshCw size={18} className={loading ? 'spinner' : ''} color="var(--text-secondary)" />
                                 </button>
                                 <button className="btn btn-ghost" style={{ height: 40, width: 40, padding: 0, justifyContent: 'center' }}>
@@ -576,7 +739,7 @@ export default function TableEditorPage() {
                             <table style={{ minWidth: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'auto' }}>
                                 <thead style={{ position: 'sticky', top: 0, zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
                                     <tr style={{ background: 'var(--bg-surface)' }}>
-                                        {hasIds && (
+                                        {showRowCheckbox && (
                                             <th style={{ width: 60, padding: 0, borderRight: '1px solid var(--border)', borderBottom: '2px solid var(--border)', position: 'sticky', left: 0, zIndex: 10, background: 'var(--bg-surface)' }}>
                                                 <div
                                                     onClick={toggleAll}
@@ -587,17 +750,50 @@ export default function TableEditorPage() {
                                             </th>
                                         )}
                                         {columns.map(c => (
-                                            <th key={c.name} style={{ textAlign: 'left', padding: '0 20px', borderRight: '1px solid var(--border)', borderBottom: '2px solid var(--border)', height: 48, minWidth: 160 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                        <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>{c.name}</span>
-                                                        <span style={{ fontSize: 9, color: 'var(--text-muted)', background: 'var(--bg-main)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid var(--border-soft)' }}>{c.type.toUpperCase()}</span>
+                                            <th
+                                                key={c.name}
+                                                onClick={() => setSelectedColumn(c.name === selectedColumn ? null : c.name)}
+                                                style={{
+                                                    textAlign: 'left',
+                                                    padding: '0 12px 0 16px',
+                                                    borderRight: '1px solid var(--border)',
+                                                    borderBottom: '2px solid var(--border)',
+                                                    height: 48,
+                                                    width: getColWidth(c.name),
+                                                    minWidth: 72,
+                                                    maxWidth: 640,
+                                                    verticalAlign: 'middle',
+                                                    background: selectedColumn === c.name ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-surface)',
+                                                    cursor: 'pointer',
+                                                    position: 'relative',
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, overflow: 'hidden' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+                                                        <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)', letterSpacing: '-0.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                                                        <span style={{ fontSize: 9, color: 'var(--text-muted)', background: 'var(--bg-main)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, border: '1px solid var(--border-soft)', flexShrink: 0 }}>{String(c.type).toUpperCase()}</span>
+                                                        {c.is_primary_key ? <span style={{ fontSize: 8, fontWeight: 900, color: 'var(--brand)', flexShrink: 0 }}>PK</span> : null}
                                                     </div>
-                                                    <ChevronDown size={14} color="var(--text-muted)" style={{ opacity: 0.5 }} />
+                                                    <GripVertical size={14} color="var(--text-muted)" style={{ opacity: 0.35, flexShrink: 0 }} />
                                                 </div>
+                                                <div
+                                                    role="separator"
+                                                    aria-label="Redimensionar columna"
+                                                    onMouseDown={e => startColResize(c.name, e)}
+                                                    onClick={e => e.stopPropagation()}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        right: 0,
+                                                        top: 0,
+                                                        bottom: 0,
+                                                        width: 6,
+                                                        cursor: 'col-resize',
+                                                        background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.06))',
+                                                    }}
+                                                />
                                             </th>
                                         ))}
-                                        <th style={{ borderBottom: '2px solid var(--border)', background: 'var(--bg-surface)', minWidth: 200 }}></th>
+                                        <th style={{ borderBottom: '2px solid var(--border)', background: 'var(--bg-surface)', minWidth: 24 }} />
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -612,36 +808,37 @@ export default function TableEditorPage() {
                                             </td>
                                         </tr>
                                     ) : rows.map((row, i) => {
-                                        const rowId = row.id;
-                                        const isSelected = rowId && selected.has(rowId);
+                                        const rowKey = getRowKey(row, pkNames);
+                                        const filters = rowKeyToFilters(row, pkNames);
+                                        const isSelected = filters != null && selected.has(rowKey);
                                         return (
-                                            <tr key={i} style={{
+                                            <tr key={rowKey || `row-${i}`} style={{
                                                 background: isSelected ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
                                                 transition: 'background 0.1s'
                                             }}>
-                                                {hasIds && (
+                                                {showRowCheckbox && (
                                                     <td style={{ borderRight: '1px solid var(--border)', padding: 0, position: 'sticky', left: 0, zIndex: 8, background: isSelected ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-surface)' }}>
                                                         <div
-                                                            onClick={(e) => toggleRow(rowId, e)}
-                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 48, cursor: 'pointer' }}
+                                                            onClick={(e) => filters && toggleRow(rowKey, e)}
+                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 48, cursor: filters ? 'pointer' : 'not-allowed', opacity: filters ? 1 : 0.35 }}
                                                         >
                                                             {isSelected ? <CheckSquare size={18} color="var(--brand)" /> : <Square size={18} color="var(--border)" style={{ opacity: 0.4 }} />}
                                                         </div>
                                                     </td>
                                                 )}
                                                 {columns.map(c => (
-                                                    <td key={c.name} style={{ borderBottom: '1px solid var(--border)', padding: 0 }}>
+                                                    <td key={c.name} style={{ borderBottom: '1px solid var(--border)', padding: 0, width: getColWidth(c.name), maxWidth: 640 }}>
                                                         <EditableCell
                                                             value={row[c.name]}
-                                                            col={c}
-                                                            rowId={rowId}
+                                                            col={c as TableColumnMeta & { name: string }}
+                                                            rowFilters={filters}
                                                             projectId={projectId!}
                                                             table={selectedTable}
                                                             onSaved={() => loadPage(page)}
                                                         />
                                                     </td>
                                                 ))}
-                                                <td style={{ borderBottom: '1px solid var(--border)' }}></td>
+                                                <td style={{ borderBottom: '1px solid var(--border)' }} />
                                             </tr>
                                         );
                                     })}

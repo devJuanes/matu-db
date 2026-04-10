@@ -5,6 +5,9 @@ import { useAuthStore } from './stores/authStore';
 import { useUIStore } from './stores/uiStore';
 
 import LoginPage from './pages/auth/LoginPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import ProjectUserResetPage from './pages/auth/ProjectUserResetPage';
 // ... rest of imports
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -164,6 +167,9 @@ export default function App() {
         <Route path="/preview/mobile" element={<MobilePreviewPage />} />
         <Route path="/preview/mobile/:screen" element={<MobilePreviewPage />} />
         <Route path="/auth/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+        <Route path="/auth/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+        <Route path="/auth/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
+        <Route path="/auth/project-user-reset" element={<ProjectUserResetPage />} />
         <Route path="/auth/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/project/:projectId" element={<ProtectedRoute><ProjectLayout /></ProtectedRoute>}>

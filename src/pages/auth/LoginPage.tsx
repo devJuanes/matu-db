@@ -51,7 +51,7 @@ export default function LoginPage() {
                         <label style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>
                             {t('auth.login.password_label') || 'Código de Acceso'}
                         </label>
-                        <a href="#" style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 800, textDecoration: 'none' }}>¿Recuperar contraseña?</a>
+                        <Link to="/auth/forgot-password" style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 800, textDecoration: 'none' }}>¿Recuperar contraseña?</Link>
                     </div>
                     <div style={{ position: 'relative' }}>
                         <Lock size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />

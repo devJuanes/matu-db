@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import {
     Plus, Zap, Trash2, Edit3, Settings,
     Clock, Activity, ChevronRight,
-    Sparkles, Layout, ToggleLeft, ToggleRight, Upload, Download
+    ToggleLeft, ToggleRight, Upload, Download
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -14,6 +14,7 @@ export default function AutomationsList() {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const [automations, setAutomations] = useState<any[]>([]);
+    const [lastRuns, setLastRuns] = useState<Record<string, { status: string; executed_at: string; log_data?: { duration_ms?: number } }>>({});
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
@@ -22,7 +23,21 @@ export default function AutomationsList() {
         try {
             setLoading(true);
             const res = await automationsAPI.list(projectId!);
-            setAutomations(res.data.data);
+            const list = res.data.data as any[];
+            setAutomations(list);
+            const runs: typeof lastRuns = {};
+            await Promise.all(
+                list.map(async (a) => {
+                    try {
+                        const lr = await automationsAPI.getLogs(projectId!, a.id, { limit: 1 });
+                        const row = lr.data.data?.[0];
+                        if (row) runs[a.id] = row;
+                    } catch {
+                        /* ignore */
+                    }
+                }),
+            );
+            setLastRuns(runs);
         } catch (err) {
             toast.error('Error al cargar automatizaciones');
         } finally {
@@ -188,30 +203,43 @@ export default function AutomationsList() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {automations.map(auto => {
                         const isActive = auto.status === 'active';
+                        const last = lastRuns[auto.id];
+                        const dur = last?.log_data?.duration_ms;
                         return (
                             <div key={auto.id} style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '24px 32px', background: 'var(--bg-surface)',
+                                display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+                                padding: 0, background: 'var(--bg-surface)',
                                 border: '1px solid var(--border)', borderRadius: 24,
                                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                 position: 'relative',
                                 overflow: 'hidden'
-                            }} className="automation-card">
-                                {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--brand)' }} />}
+                            }} className={`automation-card ${isActive ? 'automation-card--live' : ''}`}>
+                                {isActive && <div className="automation-card-shimmer" aria-hidden />}
+                                {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--brand)', zIndex: 1 }} />}
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1, minWidth: 0 }}>
+                                <button
+                                    type="button"
+                                    className="automation-card-main"
+                                    onClick={() => navigate(`/project/${projectId}/automations/${auto.id}`)}
+                                    style={{
+                                        flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 24,
+                                        padding: '24px 28px', textAlign: 'left', border: 'none', background: 'transparent',
+                                        cursor: 'pointer', color: 'inherit', font: 'inherit',
+                                    }}
+                                >
                                     <div style={{
                                         width: 52, height: 52, borderRadius: 16,
                                         background: isActive ? 'linear-gradient(135deg, var(--brand), #059669)' : 'var(--bg-base)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         color: isActive ? '#fff' : 'var(--text-muted)',
-                                        boxShadow: isActive ? '0 8px 16px rgba(16, 185, 129, 0.2)' : 'none'
+                                        boxShadow: isActive ? '0 8px 16px rgba(16, 185, 129, 0.2)' : 'none',
+                                        flexShrink: 0,
                                     }}>
                                         {isActive ? <Activity size={24} /> : <Settings size={22} />}
                                     </div>
 
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
                                             <h4 style={{ margin: 0, fontSize: 18, fontWeight: 800, letterSpacing: '-0.3px' }}>{auto.name}</h4>
                                             <span style={{
                                                 fontSize: 10,
@@ -225,19 +253,37 @@ export default function AutomationsList() {
                                                 {auto.trigger_type.toUpperCase()}
                                             </span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                                 <Clock size={14} />
-                                                <span>{formatDistanceToNow(new Date(auto.updated_at || Date.now()), { addSuffix: true, locale: es })}</span>
+                                                <span>Actualizado {formatDistanceToNow(new Date(auto.updated_at || Date.now()), { addSuffix: true, locale: es })}</span>
                                             </div>
-                                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--border)' }} />
-                                            <span>v1.0.4</span>
+                                            {last && (
+                                                <>
+                                                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--border)' }} />
+                                                    <span style={{ fontWeight: 700, color: last.status === 'success' ? 'var(--brand)' : 'var(--danger)' }}>
+                                                        Última ejecución {formatDistanceToNow(new Date(last.executed_at), { addSuffix: true, locale: es })}
+                                                    </span>
+                                                    {typeof dur === 'number' && (
+                                                        <>
+                                                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--border)' }} />
+                                                            <span>{dur} ms</span>
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
                                     </div>
-                                </div>
+                                    <ChevronRight size={22} style={{ color: 'var(--text-muted)', flexShrink: 0, opacity: 0.5 }} />
+                                </button>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div onClick={() => toggleStatus(auto)} style={{
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 16px 0', flexShrink: 0 }}>
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => { e.stopPropagation(); toggleStatus(auto); }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleStatus(auto); } }}
+                                        style={{
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -261,23 +307,26 @@ export default function AutomationsList() {
                                         type="button"
                                         className="btn btn-ghost"
                                         title="Exportar JSON"
-                                        onClick={() => handleExport(auto.id, auto.name)}
+                                        onClick={(e) => { e.stopPropagation(); handleExport(auto.id, auto.name); }}
                                         style={{ width: 40, height: 40, padding: 0, justifyContent: 'center', borderRadius: 12 }}
                                     >
                                         <Download size={18} />
                                     </button>
 
                                     <button
+                                        type="button"
                                         className="btn btn-ghost"
-                                        onClick={() => navigate(`/project/${projectId}/automations/${auto.id}`)}
+                                        title="Abrir editor"
+                                        onClick={(e) => { e.stopPropagation(); navigate(`/project/${projectId}/automations/${auto.id}`); }}
                                         style={{ width: 40, height: 40, padding: 0, justifyContent: 'center', borderRadius: 12 }}
                                     >
                                         <Edit3 size={18} />
                                     </button>
 
                                     <button
+                                        type="button"
                                         className="btn btn-ghost hover-danger"
-                                        onClick={() => handleDelete(auto.id)}
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(auto.id); }}
                                         style={{ width: 40, height: 40, padding: 0, justifyContent: 'center', borderRadius: 12, color: 'var(--text-muted)' }}
                                     >
                                         <Trash2 size={18} />
@@ -294,6 +343,29 @@ export default function AutomationsList() {
                     box-shadow: 0 12px 24px -10px rgba(0,0,0,0.1);
                     border-color: var(--brand) !important;
                     transform: translateY(-2px);
+                }
+                .automation-card--live {
+                    border-color: rgba(16, 185, 129, 0.35) !important;
+                }
+                .automation-card-shimmer {
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(
+                        105deg,
+                        transparent 40%,
+                        rgba(16, 185, 129, 0.07) 50%,
+                        transparent 60%
+                    );
+                    background-size: 200% 100%;
+                    animation: matudb-pipeline 3.5s ease-in-out infinite;
+                    pointer-events: none;
+                }
+                @keyframes matudb-pipeline {
+                    0% { background-position: 100% 0; }
+                    100% { background-position: -100% 0; }
+                }
+                .automation-card-main:hover h4 {
+                    color: var(--brand);
                 }
                 .hover-danger:hover {
                     color: var(--danger) !important;
