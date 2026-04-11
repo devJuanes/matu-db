@@ -57,6 +57,25 @@ function stableHash(s: string): number {
     return Math.abs(h);
 }
 
+function hasValidRobotSuite(o: unknown): boolean {
+    if (!o || typeof o !== 'object') return false;
+    const sc = (o as Record<string, unknown>).suite_config;
+    return !!(sc && typeof sc === 'object' && Array.isArray((sc as { cases?: unknown }).cases));
+}
+
+/** Un robot suelto, `{ data: robot }`, o bundle `fleet-matudb-robots.json` con `robots: [...]`. */
+function expandRobotImports(parsed: unknown): Record<string, unknown>[] {
+    if (!parsed || typeof parsed !== 'object') return [];
+    const p = parsed as Record<string, unknown>;
+    if (Array.isArray(p.robots)) {
+        return (p.robots as unknown[]).filter(hasValidRobotSuite) as Record<string, unknown>[];
+    }
+    if (hasValidRobotSuite(p)) return [p];
+    const inner = p.data;
+    if (hasValidRobotSuite(inner)) return [inner as Record<string, unknown>];
+    return [];
+}
+
 export default function RobotsOfficePage() {
     const { projectId } = useParams<{ projectId: string }>();
     const [robots, setRobots] = useState<RobotRow[]>([]);
@@ -207,16 +226,20 @@ export default function RobotsOfficePage() {
         if (!file || !projectId) return;
         try {
             const text = await file.text();
-            const parsed = JSON.parse(text) as { data?: Record<string, unknown> } & Record<string, unknown>;
-            const payload = (parsed.data ?? parsed) as Record<string, unknown>;
-            if (!payload.suite_config || !Array.isArray((payload.suite_config as { cases?: unknown }).cases)) {
-                toast.error('JSON inválido: falta suite_config.cases');
+            const parsed = JSON.parse(text);
+            const items = expandRobotImports(parsed);
+            if (items.length === 0) {
+                toast.error('JSON inválido: falta suite_config.cases, o robots[] vacío / sin casos');
                 return;
             }
-            const res = await robotsAPI.import(projectId, payload);
-            toast.success('Robot importado');
+            let lastId: string | undefined;
+            for (const payload of items) {
+                const res = await robotsAPI.import(projectId, payload);
+                lastId = res.data.data?.id as string;
+            }
+            toast.success(items.length > 1 ? `${items.length} robots importados` : 'Robot importado');
             loadRobots();
-            setSelectedId(res.data.data?.id as string);
+            if (lastId) setSelectedId(lastId);
         } catch {
             toast.error('No se pudo importar el JSON');
         }
@@ -325,12 +348,30 @@ export default function RobotsOfficePage() {
             setImportCheck({ valid: false, errors: ['JSON inválido'] });
             return;
         }
+        const items = expandRobotImports(raw);
+        if (items.length === 0) {
+            setImportCheck({
+                valid: false,
+                errors: [
+                    'Usa un robot con suite_config.cases, o un bundle { "robots": [ {...}, ... ] } (ej. fleet-matudb-robots.json).',
+                ],
+            });
+            toast.error('Formato no reconocido');
+            return;
+        }
         try {
-            const res = await robotsAPI.validateImport(projectId, raw as Record<string, unknown>);
-            const d = res.data.data as { valid: boolean; errors: string[] };
-            setImportCheck({ valid: d.valid, errors: d.errors || [] });
-            if (d.valid) toast.success('Import válido');
-            else toast.error('El JSON tiene errores');
+            const allErrs: string[] = [];
+            for (let i = 0; i < items.length; i += 1) {
+                const res = await robotsAPI.validateImport(projectId, items[i]);
+                const d = res.data.data as { valid: boolean; errors: string[] };
+                if (!d.valid) {
+                    const label = String(items[i].name || `#${i + 1}`);
+                    allErrs.push(`${label}: ${(d.errors || []).join(' · ')}`);
+                }
+            }
+            setImportCheck({ valid: allErrs.length === 0, errors: allErrs.length ? allErrs : [] });
+            if (allErrs.length === 0) toast.success(items.length > 1 ? `${items.length} robots — validación OK` : 'Import válido');
+            else toast.error('Hay errores en el JSON');
         } catch {
             toast.error('No se pudo validar');
         }
@@ -338,15 +379,24 @@ export default function RobotsOfficePage() {
 
     const confirmImportPaste = async () => {
         if (!projectId || !importCheck?.valid) return;
-        let payload: Record<string, unknown>;
+        let items: Record<string, unknown>[];
         try {
-            payload = JSON.parse(importPasteText) as Record<string, unknown>;
-            const inner = (payload as { data?: Record<string, unknown> }).data ?? payload;
-            const res = await robotsAPI.import(projectId, inner);
-            toast.success('Robot importado');
+            items = expandRobotImports(JSON.parse(importPasteText));
+        } catch {
+            toast.error('JSON inválido');
+            return;
+        }
+        if (items.length === 0) return;
+        try {
+            let lastId: string | undefined;
+            for (const inner of items) {
+                const res = await robotsAPI.import(projectId, inner);
+                lastId = res.data.data?.id as string;
+            }
+            toast.success(items.length > 1 ? `${items.length} robots importados` : 'Robot importado');
             setImportPasteOpen(false);
             loadRobots();
-            setSelectedId(res.data.data?.id as string);
+            if (lastId) setSelectedId(lastId);
         } catch (err: any) {
             const d = err?.response?.data;
             toast.error(d?.message || 'Import falló');
@@ -971,7 +1021,7 @@ export default function RobotsOfficePage() {
                     >
                         <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 800 }}>Pegar JSON de robot</h3>
                         <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                            Mismo formato que exportar: <code style={{ fontSize: 11 }}>exportVersion</code>, <code style={{ fontSize: 11 }}>suite_config.cases</code>, etc. Pulsa <strong>Validar</strong> antes de importar.
+                            Un robot suelto (export) o bundle <code style={{ fontSize: 11 }}>fleet-matudb-robots.json</code> con <code style={{ fontSize: 11 }}>robots: [...]</code>. Pulsa <strong>Validar</strong> antes de importar.
                         </p>
                         <textarea
                             value={importPasteText}
@@ -979,7 +1029,7 @@ export default function RobotsOfficePage() {
                                 setImportPasteText(e.target.value);
                                 setImportCheck(null);
                             }}
-                            placeholder='{ "exportVersion": 1, "name": "...", "suite_config": { "cases": [...] } }'
+                            placeholder='{ "robots": [ { "name", "suite_config": { "cases": [...] } }, ... ] }'
                             spellCheck={false}
                             style={{
                                 width: '100%',
