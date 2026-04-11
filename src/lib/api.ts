@@ -152,6 +152,14 @@ export const whatsappAPI = {
     restart: () => api.post('/whatsapp/restart'),
 };
 
+// ── Pagos Wompi (MatuDB proxy; configuración con JWT) ───────
+export const paymentsWompiAPI = {
+    getConfig: (pid: string) => api.get(`/projects/${pid}/payments/wompi/config`),
+    putConfig: (pid: string, data: Record<string, unknown>) => api.put(`/projects/${pid}/payments/wompi/config`, data),
+    getIntegrationDoc: (pid: string) =>
+        api.get(`/projects/${pid}/payments/wompi/integration-doc`, { responseType: 'text' as const }),
+};
+
 // ── Notifications ──────────────────────────────────────────
 export const notificationsAPI = {
     getApps: (pid: string) => api.get(`/projects/${pid}/notifications/apps`),

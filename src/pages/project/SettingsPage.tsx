@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext, useParams, useNavigate } from 'react-router-dom';
-import { projectsAPI, keysAPI } from '../../lib/api';
+import { projectsAPI, keysAPI, paymentsWompiAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
 import {
     Save, Trash2, AlertTriangle, Key, Eye, EyeOff,
@@ -20,17 +20,86 @@ export default function SettingsPage() {
     const [keys, setKeys] = useState<{ anon_key?: string; service_role_key?: string }>({});
     const [showKey, setShowKey] = useState<'anon' | 'service' | null>(null);
     const [codeTab, setCodeTab] = useState<'upload' | 'list' | 'delete'>('upload');
+    const [payForm, setPayForm] = useState({
+        environment: 'sandbox' as 'sandbox' | 'production',
+        publicKey: '',
+        privateKey: '',
+        integritySecret: '',
+        merchantName: '',
+        defaultCurrency: 'COP',
+    });
+    const [payMeta, setPayMeta] = useState<{ configured: boolean; server_encryption_ready?: boolean; has_private_key?: boolean; has_integrity_secret?: boolean } | null>(null);
+    const [paySaving, setPaySaving] = useState(false);
+    const [payDocLoading, setPayDocLoading] = useState(false);
 
     useEffect(() => {
         if (projectId) {
             keysAPI.list(projectId).then(r => setKeys(r.data.data || {})).catch(() => { });
+            paymentsWompiAPI.getConfig(projectId).then((r) => {
+                const d = r.data?.data;
+                if (!d) return;
+                setPayMeta({
+                    configured: d.configured,
+                    server_encryption_ready: d.server_encryption_ready,
+                    has_private_key: d.has_private_key,
+                    has_integrity_secret: d.has_integrity_secret,
+                });
+                setPayForm((f) => ({
+                    ...f,
+                    environment: d.environment === 'production' ? 'production' : 'sandbox',
+                    publicKey: d.public_key || '',
+                    merchantName: d.merchant_name || '',
+                    defaultCurrency: d.default_currency || 'COP',
+                    privateKey: '',
+                    integritySecret: '',
+                }));
+            }).catch(() => { });
         }
     }, [projectId]);
 
-    const BASE = `http://localhost:3001/api/projects/${projectId}`;
+    const apiBase = import.meta.env.VITE_MATUDB_URL || 'http://localhost:3001/api';
+    const BASE = `${apiBase.replace(/\/+$/, '')}/projects/${projectId}`;
     const copyToClipboard = (text: string, label = 'Copiado al portapapeles') => {
         navigator.clipboard.writeText(text);
         toast.success(label);
+    };
+
+    const saveWompi = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!projectId) return;
+        setPaySaving(true);
+        try {
+            const res = await paymentsWompiAPI.putConfig(projectId, payForm);
+            const d = res.data?.data;
+            toast.success('Pasarela Wompi guardada');
+            if (d) {
+                setPayMeta({
+                    configured: d.configured,
+                    server_encryption_ready: d.server_encryption_ready,
+                    has_private_key: d.has_private_key,
+                    has_integrity_secret: d.has_integrity_secret,
+                });
+                setPayForm((f) => ({ ...f, privateKey: '', integritySecret: '' }));
+            }
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error al guardar Wompi');
+        } finally {
+            setPaySaving(false);
+        }
+    };
+
+    const loadIntegrationDoc = async () => {
+        if (!projectId) return;
+        setPayDocLoading(true);
+        try {
+            const res = await paymentsWompiAPI.getIntegrationDoc(projectId);
+            const text = typeof res.data === 'string' ? res.data : String(res.data);
+            copyToClipboard(text, 'Documentación copiada al portapapeles');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'No se pudo cargar la documentación');
+        } finally {
+            setPayDocLoading(false);
+        }
     };
 
     const saveChanges = async (e: React.FormEvent) => {
@@ -280,6 +349,88 @@ const { data } = await res.json();` :
                                         }
                                     </pre>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 24,
+                        overflow: 'hidden',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+                    }}>
+                        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                            <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <CreditCard size={20} color="var(--brand)" /> Pasarela de pago (Wompi)
+                            </h3>
+                            {payMeta?.configured ? (
+                                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(16, 185, 129, 0.2)' }}>CONFIGURADA</span>
+                            ) : (
+                                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', padding: '4px 12px', borderRadius: 20, border: '1px solid var(--border)' }}>SIN CONFIGURAR</span>
+                            )}
+                        </div>
+                        <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                            {payMeta && payMeta.server_encryption_ready === false && (
+                                <div style={{ padding: '16px 20px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 14 }}>
+                                    <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                                        El servidor no tiene <code style={{ fontSize: 12 }}>MATUDB_PAYMENT_ENCRYPTION_KEY</code>. Define esa variable en el API antes de guardar llaves Wompi.
+                                    </p>
+                                </div>
+                            )}
+                            <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                                Las llaves privadas y el secreto de integridad se guardan <strong>cifrados</strong> en la base de datos. Desde tu backend usa la <strong>service key</strong> contra los endpoints de pagos (nunca expongas la llave privada de Wompi en el navegador).
+                            </p>
+                            <form onSubmit={saveWompi} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 8 }}>Ambiente</label>
+                                    <select
+                                        className="input"
+                                        value={payForm.environment}
+                                        onChange={(e) => setPayForm((f) => ({ ...f, environment: e.target.value as 'sandbox' | 'production' }))}
+                                        style={{ height: 48, borderRadius: 12 }}
+                                    >
+                                        <option value="sandbox">Sandbox (pruebas)</option>
+                                        <option value="production">Producción</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 8 }}>Llave pública Wompi</label>
+                                    <input className="input" value={payForm.publicKey} onChange={(e) => setPayForm((f) => ({ ...f, publicKey: e.target.value }))} placeholder="pub_test_..." style={{ height: 48, borderRadius: 12, fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 8 }}>
+                                        Llave privada {payMeta?.has_private_key ? <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>(vacío = no cambiar)</span> : null}
+                                    </label>
+                                    <input type="password" className="input" value={payForm.privateKey} onChange={(e) => setPayForm((f) => ({ ...f, privateKey: e.target.value }))} placeholder={payMeta?.has_private_key ? '••••••••' : 'prv_test_...'} autoComplete="off" style={{ height: 48, borderRadius: 12, fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 8 }}>
+                                        Secreto de integridad {payMeta?.has_integrity_secret ? <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>(vacío = no cambiar)</span> : null}
+                                    </label>
+                                    <input type="password" className="input" value={payForm.integritySecret} onChange={(e) => setPayForm((f) => ({ ...f, integritySecret: e.target.value }))} placeholder={payMeta?.has_integrity_secret ? '••••••••' : 'test_integrity_...'} autoComplete="off" style={{ height: 48, borderRadius: 12, fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 8 }}>Nombre comercio (opcional)</label>
+                                    <input className="input" value={payForm.merchantName} onChange={(e) => setPayForm((f) => ({ ...f, merchantName: e.target.value }))} style={{ height: 48, borderRadius: 12 }} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 8 }}>Moneda por defecto</label>
+                                    <input className="input" value={payForm.defaultCurrency} onChange={(e) => setPayForm((f) => ({ ...f, defaultCurrency: e.target.value.toUpperCase() }))} style={{ height: 48, borderRadius: 12, maxWidth: 120 }} />
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'flex-end' }}>
+                                    <button type="button" className="btn btn-secondary" disabled={payDocLoading} onClick={loadIntegrationDoc} style={{ height: 48, padding: '0 20px', borderRadius: 14, fontWeight: 700 }}>
+                                        {payDocLoading ? '…' : <><Terminal size={16} style={{ marginRight: 8 }} />Copiar doc. integración</>}
+                                    </button>
+                                    <button type="submit" className="btn btn-primary" disabled={paySaving || payMeta?.server_encryption_ready === false} style={{ height: 48, padding: '0 28px', borderRadius: 14, fontWeight: 800 }}>
+                                        {paySaving ? 'Guardando…' : <><Save size={18} /> Guardar Wompi</>}
+                                    </button>
+                                </div>
+                            </form>
+                            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+                                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
+                                    Endpoints: <code style={{ fontSize: 11 }}>{BASE}/payments/wompi/signature</code> y <code style={{ fontSize: 11 }}>{BASE}/payments/wompi/transactions</code> (header <code style={{ fontSize: 11 }}>apikey</code>: service). Paquete npm: <code style={{ fontSize: 11 }}>@devjuanes/matupay</code>.
+                                </p>
                             </div>
                         </div>
                     </div>
