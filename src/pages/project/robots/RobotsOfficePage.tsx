@@ -26,12 +26,15 @@ import {
     GitBranch,
     Pause,
     PlayCircle,
+    Zap,
+    Users,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 type RobotRow = {
     id: string;
+    project_id?: string;
     name: string;
     category: string;
     status: string;
@@ -76,6 +79,25 @@ function expandRobotImports(parsed: unknown): Record<string, unknown>[] {
     return [];
 }
 
+/** Puesto fijo en la oficina (por índice) para avatares en mesa. */
+function deskPositionPct(index: number, total: number): { left: string; top: string } {
+    if (total <= 0) return { left: '50%', top: '52%' };
+    const cols = Math.min(5, Math.max(1, Math.ceil(Math.sqrt(total + 2))));
+    const rows = Math.ceil(total / cols);
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    const marginX = 7;
+    const marginTop = 26;
+    const marginBot = 14;
+    const width = 100 - 2 * marginX;
+    const height = 100 - marginTop - marginBot;
+    const cellW = width / cols;
+    const cellH = height / Math.max(rows, 1);
+    const left = marginX + col * cellW + cellW * 0.5;
+    const top = marginTop + row * cellH + cellH * 0.52;
+    return { left: `${left}%`, top: `${top}%` };
+}
+
 export default function RobotsOfficePage() {
     const { projectId } = useParams<{ projectId: string }>();
     const [robots, setRobots] = useState<RobotRow[]>([]);
@@ -93,6 +115,9 @@ export default function RobotsOfficePage() {
     const [sideTab, setSideTab] = useState<'runs' | 'chat' | 'worker' | 'flow'>('runs');
     const [officeZoom, setOfficeZoom] = useState(1);
     const [schedDraft, setSchedDraft] = useState('');
+    const [globalSchedDraft, setGlobalSchedDraft] = useState('');
+    const [runningAllSuites, setRunningAllSuites] = useState(false);
+    const globalIntervalRef = useRef<HTMLInputElement>(null);
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const loadRobots = useCallback(async () => {
@@ -277,6 +302,46 @@ export default function RobotsOfficePage() {
         }
     };
 
+    const handleRunAll = async () => {
+        if (!projectId || robots.length === 0) return;
+        setRunningAllSuites(true);
+        try {
+            const res = await robotsAPI.runAll(projectId);
+            const d = res.data.data as {
+                started: { id: string; name: string; runId: string }[];
+                skipped: { id: string; name: string; reason: string }[];
+                failed: { id: string; name: string; errors?: string[]; error?: string }[];
+            };
+            const s = d.started?.length ?? 0;
+            const sk = d.skipped?.length ?? 0;
+            const f = d.failed?.length ?? 0;
+            toast.success(
+                `Oficina: ${s} suite${s !== 1 ? 's' : ''} en paralelo${sk ? ` · ${sk} ya en curso` : ''}${f ? ` · ${f} fallaron` : ''}`,
+            );
+            if (f > 0 && d.failed?.length) {
+                const names = d.failed.map((x) => x.name).join(', ');
+                toast.error(names.slice(0, 120) + (names.length > 120 ? '…' : ''));
+            }
+            loadRobots();
+        } catch (err: any) {
+            const d = err?.response?.data;
+            toast.error(d?.message || 'No se pudo ejecutar toda la oficina');
+        } finally {
+            setRunningAllSuites(false);
+        }
+    };
+
+    const bulkWorkerOffice = async (patch: Record<string, unknown>) => {
+        if (!projectId || robots.length === 0) return;
+        try {
+            await robotsAPI.bulkWorker(projectId, patch);
+            toast.success('Operativa aplicada a toda la oficina');
+            loadRobots();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'No se pudo actualizar');
+        }
+    };
+
     const openSuiteEditor = async (id: string) => {
         if (!projectId) return;
         try {
@@ -439,21 +504,190 @@ export default function RobotsOfficePage() {
     const flowRobot = selected || robots[0];
     const flowNodes = flowRobot?.workspace_config?.flow?.nodes || [];
 
+    const officeRobots =
+        projectId ? robots.filter((r) => !r.project_id || String(r.project_id) === projectId) : robots;
+
     return (
-        <div style={{ padding: '32px 28px 48px', maxWidth: 1520, margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
-                <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--brand)', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10 }}>
-                        <Bot size={14} /> Laboratorio de pruebas
+        <div
+            style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                background: 'var(--bg-base)',
+                minHeight: 0,
+            }}
+        >
+            <input ref={importInputRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={handleImportFile} />
+
+            <header
+                style={{
+                    flexShrink: 0,
+                    padding: '10px 14px 12px',
+                    borderBottom: '1px solid var(--border)',
+                    background: 'var(--bg-surface)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    zIndex: 5,
+                }}
+            >
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <div
+                            style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 12,
+                                background: 'linear-gradient(135deg, var(--brand), #059669)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                flexShrink: 0,
+                            }}
+                        >
+                            <Users size={20} />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Área de trabajo</div>
+                            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, letterSpacing: '-0.3px' }}>Oficina de robots</h1>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                {officeRobots.length} empleado{officeRobots.length !== 1 ? 's' : ''} · suites en paralelo y workers globales
+                            </div>
+                        </div>
                     </div>
-                    <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.8px', margin: 0 }}>Oficina de robots</h1>
-                    <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontSize: 15, maxWidth: 620, lineHeight: 1.55 }}>
-                        Workers ligeros 24/7 en el <strong style={{ fontWeight: 700 }}>API MatuDB</strong>: seguridad SQL (<code style={{ fontSize: 12 }}>sql_history</code>), salud API, latencia DB, almacenamiento, coordinación y alertas por correo si algo es crítico.
-                        Siguen corriendo con <code style={{ fontSize: 12 }}>worker</code> activo hasta que pauses, detengas o llegue la hora límite. Suites manuales siguen disponibles.
-                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={runningAllSuites || officeRobots.length === 0}
+                            onClick={handleRunAll}
+                            style={{
+                                height: 40,
+                                padding: '0 16px',
+                                borderRadius: 12,
+                                fontWeight: 800,
+                                gap: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                boxShadow: '0 8px 18px rgba(16, 185, 129, 0.2)',
+                            }}
+                            title="Ejecuta la suite de cada robot al mismo tiempo"
+                        >
+                            {runningAllSuites ? <span className="spinner-sm" style={{ width: 16, height: 16 }} /> : <Zap size={18} />}
+                            Ejecutar toda la oficina
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={officeRobots.length === 0}
+                            onClick={() => bulkWorkerOffice({ worker_enabled: true, worker_paused: false })}
+                            style={{ height: 36, padding: '0 12px', borderRadius: 10, fontWeight: 700, fontSize: 12, gap: 6, display: 'flex', alignItems: 'center' }}
+                        >
+                            <PlayCircle size={15} /> Workers ON
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={officeRobots.length === 0}
+                            onClick={() => bulkWorkerOffice({ worker_paused: true })}
+                            style={{ height: 36, padding: '0 12px', borderRadius: 10, fontWeight: 700, fontSize: 12, gap: 6, display: 'flex', alignItems: 'center' }}
+                        >
+                            <Pause size={15} /> Pausar todos
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={officeRobots.length === 0}
+                            onClick={() => bulkWorkerOffice({ worker_paused: false })}
+                            style={{ height: 36, padding: '0 12px', borderRadius: 10, fontWeight: 700, fontSize: 12 }}
+                        >
+                            Reanudar
+                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <input
+                                ref={globalIntervalRef}
+                                type="number"
+                                min={30}
+                                max={86400}
+                                defaultValue={180}
+                                title="Intervalo worker (seg) para todos"
+                                style={{
+                                    width: 72,
+                                    height: 34,
+                                    padding: '0 8px',
+                                    borderRadius: 10,
+                                    border: '1px solid var(--border)',
+                                    background: 'var(--bg-base)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                }}
+                            />
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                disabled={officeRobots.length === 0}
+                                onClick={() => {
+                                    const v = Math.max(30, parseInt(globalIntervalRef.current?.value || '180', 10) || 180);
+                                    bulkWorkerOffice({ worker_interval_sec: v });
+                                }}
+                                style={{ height: 34, padding: '0 10px', borderRadius: 10, fontSize: 11, fontWeight: 800 }}
+                            >
+                                Intervalo → todos
+                            </button>
+                        </div>
+                        <input
+                            type="datetime-local"
+                            value={globalSchedDraft}
+                            onChange={(e) => setGlobalSchedDraft(e.target.value)}
+                            style={{
+                                height: 34,
+                                padding: '0 8px',
+                                borderRadius: 10,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg-base)',
+                                color: 'var(--text-primary)',
+                                fontSize: 12,
+                            }}
+                        />
+                        <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={officeRobots.length === 0}
+                            onClick={() =>
+                                bulkWorkerOffice({
+                                    schedule_until: globalSchedDraft ? new Date(globalSchedDraft).toISOString() : null,
+                                })
+                            }
+                            style={{ height: 34, padding: '0 10px', borderRadius: 10, fontSize: 11, fontWeight: 700 }}
+                        >
+                            Parada programada (todos)
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-ghost"
+                            disabled={officeRobots.length === 0}
+                            onClick={() => {
+                                setGlobalSchedDraft('');
+                                bulkWorkerOffice({ schedule_until: null });
+                            }}
+                            style={{ height: 34, fontSize: 11, fontWeight: 700 }}
+                        >
+                            Quitar horario
+                        </button>
+                        <span style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 4px' }} aria-hidden />
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700 }}>Zoom</span>
+                        <button type="button" className="btn btn-outline" style={{ width: 36, height: 34, padding: 0, borderRadius: 10 }} onClick={() => setOfficeZoom((z) => Math.max(0.65, Math.round((z - 0.1) * 100) / 100))}>
+                            <ZoomOut size={16} />
+                        </button>
+                        <button type="button" className="btn btn-outline" style={{ width: 36, height: 34, padding: 0, borderRadius: 10 }} onClick={() => setOfficeZoom((z) => Math.min(1.45, Math.round((z + 0.1) * 100) / 100))}>
+                            <ZoomIn size={16} />
+                        </button>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end' }}>
-                    <input ref={importInputRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={handleImportFile} />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                     <button
                         type="button"
                         className="btn btn-outline"
@@ -462,25 +696,39 @@ export default function RobotsOfficePage() {
                             setImportPasteText('');
                             setImportCheck(null);
                         }}
-                        style={{ height: 44, padding: '0 18px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center' }}
+                        style={{ height: 34, padding: '0 12px', borderRadius: 10, fontWeight: 700, fontSize: 12, gap: 6, display: 'flex', alignItems: 'center' }}
                     >
-                        <ClipboardPaste size={17} /> Pegar JSON
+                        <ClipboardPaste size={15} /> Pegar JSON
                     </button>
-                    <button type="button" className="btn btn-outline" onClick={() => importInputRef.current?.click()} style={{ height: 44, padding: '0 18px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center' }}>
-                        <Upload size={17} /> Importar JSON
+                    <button type="button" className="btn btn-outline" onClick={() => importInputRef.current?.click()} style={{ height: 34, padding: '0 12px', borderRadius: 10, fontWeight: 700, fontSize: 12, gap: 6, display: 'flex', alignItems: 'center' }}>
+                        <Upload size={15} /> Importar
                     </button>
-                    <button type="button" className="btn btn-outline" onClick={handleSeedFleet} style={{ height: 44, padding: '0 18px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center' }} title="12 roles: SQL, API, storage, correo…">
-                        <Sparkles size={17} /> Instalar equipo MatuDB
+                    <button type="button" className="btn btn-outline" onClick={handleSeedFleet} style={{ height: 34, padding: '0 12px', borderRadius: 10, fontWeight: 700, fontSize: 12, gap: 6, display: 'flex', alignItems: 'center' }} title="12 roles MatuDB">
+                        <Sparkles size={15} /> Equipo MatuDB
                     </button>
-                    <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={creating} style={{ height: 44, padding: '0 22px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center', boxShadow: '0 10px 20px rgba(16, 185, 129, 0.18)' }}>
-                        {creating ? <span className="spinner-sm" style={{ width: 18, height: 18 }} /> : <Plus size={19} />}
+                    <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={creating} style={{ height: 34, padding: '0 14px', borderRadius: 10, fontWeight: 700, fontSize: 12, gap: 6, display: 'flex', alignItems: 'center' }}>
+                        {creating ? <span className="spinner-sm" style={{ width: 14, height: 14 }} /> : <Plus size={16} />}
                         Nuevo robot
                     </button>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>
+                        Workers y parada se aplican a <strong>toda la oficina</strong>; el panel izquierdo afiná por robot.
+                    </span>
                 </div>
-            </div>
+            </header>
 
-            <div className="robot-office-page-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 400px) 1fr', gap: 24, alignItems: 'stretch' }}>
-                <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div
+                className="robot-office-page-grid"
+                style={{
+                    flex: 1,
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(280px, 340px) 1fr',
+                    gap: 0,
+                    alignItems: 'stretch',
+                    minHeight: 0,
+                    overflow: 'hidden',
+                }}
+            >
+                <aside style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 12, overflow: 'auto', borderRight: '1px solid var(--border)', minHeight: 0, background: 'var(--bg-surface)' }}>
                     <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', paddingLeft: 4 }}>Equipo</div>
                     {loading ? (
                         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</div>
@@ -708,6 +956,9 @@ export default function RobotsOfficePage() {
                     {selected && sideTab === 'worker' && (
                         <div style={{ marginTop: 8, padding: 18, background: 'var(--bg-surface)', borderRadius: 18, border: '1px solid var(--border)' }}>
                             <div style={{ fontWeight: 800, marginBottom: 12, fontSize: 14 }}>Worker 24/7 — {selected.name}</div>
+                            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                                Para <strong>toda la oficina</strong> usa la barra superior (ON / pausa / intervalo / parada).
+                            </p>
                             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, marginBottom: 12, cursor: 'pointer' }}>
                                 <input
                                     type="checkbox"
@@ -798,37 +1049,28 @@ export default function RobotsOfficePage() {
                     )}
                 </aside>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Zoom oficina</span>
-                        <button type="button" className="btn btn-outline" style={{ width: 40, height: 36, padding: 0, borderRadius: 10 }} onClick={() => setOfficeZoom((z) => Math.max(0.65, Math.round((z - 0.1) * 100) / 100))}>
-                            <ZoomOut size={18} />
-                        </button>
-                        <button type="button" className="btn btn-outline" style={{ width: 40, height: 36, padding: 0, borderRadius: 10 }} onClick={() => setOfficeZoom((z) => Math.min(1.35, Math.round((z + 0.1) * 100) / 100))}>
-                            <ZoomIn size={18} />
-                        </button>
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, flex: 1, position: 'relative', background: 'var(--bg-base)' }}>
                     <section
-                    className="robot-office-wrap"
-                    style={{
-                        position: 'relative',
-                        flex: 1,
-                        minHeight: 480,
-                        maxHeight: 'min(78vh, 820px)',
-                        borderRadius: 24,
-                        border: '1px solid var(--border)',
-                        background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-base) 100%)',
-                        overflow: 'auto',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-                    }}
-                >
+                        className="robot-office-wrap"
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: 0,
+                            border: 'none',
+                            background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-base) 100%)',
+                            overflow: 'hidden',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+                        }}
+                    >
                     <div
                         style={{
                             transform: `scale(${officeZoom})`,
-                            transformOrigin: 'top center',
-                            minHeight: 520,
+                            transformOrigin: 'center center',
                             width: '100%',
-                            position: 'relative',
+                            height: '100%',
+                            minHeight: 420,
+                            position: 'absolute',
+                            inset: 0,
                         }}
                     >
                     <div className="robot-office-sky" />
@@ -849,21 +1091,22 @@ export default function RobotsOfficePage() {
                             MatuDB · área de pruebas
                         </div>
 
-                        {robots.map((r) => {
+                        {officeRobots.map((r, deskIndex) => {
                             const h = stableHash(r.id);
                             const delay = (h % 9000) / 1000;
-                            const duration = 11 + (h % 7000) / 1000;
+                            const pos = deskPositionPct(deskIndex, officeRobots.length);
                             const accent = r.workspace_config?.visual?.accent || ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#06b6d4'][h % 5];
                             const running = r.status === 'running';
                             const working = !!(r.worker_enabled && !r.worker_paused);
                             return (
                                 <div
                                     key={r.id}
-                                    className={`robot-sprite ${running ? 'robot-sprite--running' : ''} ${working ? 'robot-sprite--working' : ''}`}
+                                    className={`robot-sprite robot-sprite--desk ${running ? 'robot-sprite--running' : ''} ${working ? 'robot-sprite--working' : ''}`}
                                     style={
                                         {
                                             ['--robot-delay' as string]: `${delay}s`,
-                                            ['--robot-duration' as string]: `${running || working ? Math.max(5, duration - 4) : duration}s`,
+                                            ['--desk-left' as string]: pos.left,
+                                            ['--desk-top' as string]: pos.top,
                                             ['--robot-accent' as string]: accent,
                                         } as React.CSSProperties
                                     }
@@ -875,7 +1118,9 @@ export default function RobotsOfficePage() {
                                         </div>
                                     )}
                                     <div className="robot-sprite-inner">
-                                        <Bot size={22} strokeWidth={2.2} />
+                                        <span className="robot-avatar-emoji" aria-hidden>
+                                            {['🧑‍💻', '👩‍💻', '🧑‍🔧', '👨‍💼', '🧑‍🚀', '👩‍🔬'][h % 6]}
+                                        </span>
                                         {working && <span className="robot-typing" aria-hidden />}
                                     </div>
                                     <span className="robot-sprite-label">{r.name}</span>
@@ -883,7 +1128,7 @@ export default function RobotsOfficePage() {
                             );
                         })}
 
-                        {robots.length === 0 && !loading && (
+                        {officeRobots.length === 0 && !loading && (
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 15, fontWeight: 600, padding: 24 }}>
                                     La oficina está vacía. Añade robots al panel izquierdo.
@@ -1138,28 +1383,30 @@ export default function RobotsOfficePage() {
                     opacity: 0.7;
                     pointer-events: none;
                 }
-                @keyframes robot-patrol {
-                    0% { left: var(--office-pad); top: 72%; }
-                    25% { left: calc(100% - var(--office-pad)); top: 72%; }
-                    50% { left: calc(100% - var(--office-pad)); top: 18%; }
-                    75% { left: var(--office-pad); top: 18%; }
-                    100% { left: var(--office-pad); top: 72%; }
+                @keyframes robot-desk-breathe {
+                    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+                    50% { transform: translate(-50%, -50%) translateY(-3px); }
                 }
                 .robot-sprite {
                     position: absolute;
-                    left: var(--office-pad);
-                    top: 72%;
-                    transform: translate(-50%, -50%);
-                    animation-name: robot-patrol;
-                    animation-duration: var(--robot-duration, 12s);
-                    animation-delay: var(--robot-delay, 0s);
-                    animation-timing-function: ease-in-out;
-                    animation-iteration-count: infinite;
                     z-index: 5;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     gap: 4px;
+                }
+                .robot-sprite--desk {
+                    left: var(--desk-left, 50%);
+                    top: var(--desk-top, 50%);
+                    transform: translate(-50%, -50%);
+                    animation: robot-desk-breathe 4.2s ease-in-out infinite;
+                    animation-delay: var(--robot-delay, 0s);
+                }
+                .robot-avatar-emoji {
+                    font-size: 24px;
+                    line-height: 1;
+                    display: block;
+                    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.22));
                 }
                 .robot-sprite-inner {
                     width: 46px;
@@ -1240,6 +1487,7 @@ export default function RobotsOfficePage() {
                 }
                 @media (max-width: 900px) {
                     .robot-office-page-grid { grid-template-columns: 1fr !important; }
+                    .robot-office-page-grid aside { max-height: 42vh; border-right: none !important; border-bottom: 1px solid var(--border); }
                 }
             `}</style>
         </div>
