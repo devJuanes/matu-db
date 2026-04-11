@@ -26,7 +26,8 @@ import {
     Mail,
     MessagesSquare,
     MessageCircle,
-    Bot
+    Bot,
+    CreditCard
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
@@ -56,6 +57,7 @@ export default function ProjectLayout() {
         { to: 'keys', label: t('sidebar.keys'), icon: Key },
         { to: 'notifications', label: 'Notificaciones', icon: MessagesSquare },
         { to: 'templates', label: 'Plantillas', icon: Mail },
+        { to: 'payments', label: 'Pasarela de pago', icon: CreditCard },
         { to: 'settings', label: t('sidebar.settings'), icon: Settings },
     ];
 

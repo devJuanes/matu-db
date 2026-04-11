@@ -16,6 +16,7 @@ import TableEditorPage from './pages/project/TableEditorPage';
 import SqlEditorPage from './pages/project/SqlEditorPage';
 import ApiKeysPage from './pages/project/ApiKeysPage';
 import SettingsPage from './pages/project/SettingsPage';
+import PaymentGatewayPage from './pages/project/PaymentGatewayPage';
 import StoragePage from './pages/project/StoragePage';
 import ProjectAuthPage from './pages/project/ProjectAuthPage';
 import DatabasePage from './pages/project/DatabasePage';
@@ -77,6 +78,9 @@ function RouteSeo() {
     } else if (path.startsWith('/dashboard')) {
       title = 'Dashboard | MatuDB';
       description = 'Administra tus proyectos y recursos desde la consola.';
+    } else if (path.includes('/project/') && path.includes('/payments')) {
+      title = 'Pasarela de pago | MatuDB';
+      description = 'Configura Wompi, genera links de pago y consulta ejemplos de integración.';
     } else if (path.startsWith('/project/')) {
       title = 'Proyecto | Consola MatuDB';
       description = 'Gestiona tablas, SQL, auth, storage, deploy y automatizaciones de tu proyecto.';
@@ -190,6 +194,7 @@ export default function App() {
           <Route path="whatsapp" element={<WhatsappPage />} />
           <Route path="simulator" element={<SimulatorPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="payments" element={<PaymentGatewayPage />} />
         </Route>
         <Route path="/matricula" element={<MatriculaPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

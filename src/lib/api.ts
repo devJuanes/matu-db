@@ -32,6 +32,8 @@ export const authAPI = {
     register: (data: any) => api.post('/auth/register', data),
     login: (data: any) => api.post('/auth/login', data),
     me: () => api.get('/auth/me'),
+    /** Token corto (5m) en respuesta para header X-MatuDB-Reauth en pagos */
+    verifyPassword: (password: string) => api.post('/auth/verify-password', { password }),
     forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
     resetPassword: (token: string, password: string) => api.post('/auth/reset-password', { token, password }),
     recoverUserPassword: (pid: string, uid: string) => api.post(`/projects/${pid}/auth/users/${uid}/recover`),
@@ -152,12 +154,22 @@ export const whatsappAPI = {
     restart: () => api.post('/whatsapp/restart'),
 };
 
-// ── Pagos Wompi (MatuDB proxy; configuración con JWT) ───────
+const paymentsReauthHeaders = (reauthToken: string) => ({
+    headers: { 'X-MatuDB-Reauth': reauthToken },
+});
+
+// ── Pagos Wompi (MatuDB proxy; operaciones sensibles requieren X-MatuDB-Reauth) ──
 export const paymentsWompiAPI = {
     getConfig: (pid: string) => api.get(`/projects/${pid}/payments/wompi/config`),
-    putConfig: (pid: string, data: Record<string, unknown>) => api.put(`/projects/${pid}/payments/wompi/config`, data),
-    getIntegrationDoc: (pid: string) =>
-        api.get(`/projects/${pid}/payments/wompi/integration-doc`, { responseType: 'text' as const }),
+    putConfig: (pid: string, data: Record<string, unknown>, reauthToken: string) =>
+        api.put(`/projects/${pid}/payments/wompi/config`, data, paymentsReauthHeaders(reauthToken)),
+    getIntegrationDoc: (pid: string, reauthToken: string) =>
+        api.get(`/projects/${pid}/payments/wompi/integration-doc`, {
+            ...paymentsReauthHeaders(reauthToken),
+            responseType: 'text' as const,
+        }),
+    createPaymentLink: (pid: string, body: Record<string, unknown>, reauthToken: string) =>
+        api.post(`/projects/${pid}/payments/wompi/payment-links`, body, paymentsReauthHeaders(reauthToken)),
 };
 
 // ── Notifications ──────────────────────────────────────────
