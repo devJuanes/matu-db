@@ -1,0 +1,348 @@
+{
+  "exportVersion": 1,
+  "bundleKind": "matudb_fleet_robots",
+  "description": "12 robots preset MatuDB (mismo catálogo que seed-fleet). Importa cada elemento con POST .../robots/import o usa el botón Instalar equipo en el panel.",
+  "suite_template": {
+    "stopOnError": false,
+    "cases": [
+      {
+        "id": "worker-placeholder",
+        "name": "Worker MatuDB",
+        "steps": [
+          {
+            "id": "w",
+            "kind": "noop",
+            "action": "note",
+            "target": "Preset MatuDB: el trabajo real lo hace el worker en la API (ticks). Puedes añadir suites SQL/HTTP aparte."
+          }
+        ]
+      }
+    ]
+  },
+  "robots": [
+    {
+      "exportVersion": 1,
+      "name": "Inspector SQL",
+      "category": "custom",
+      "preset_key": "matudb:sql_security",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 180,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#ef4444" },
+        "flow": { "nodes": [{ "id": "a", "label": "Inspector SQL", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Pulso consultas",
+      "category": "performance",
+      "preset_key": "matudb:sql_pulse",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 200,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#8b5cf6" },
+        "flow": { "nodes": [{ "id": "a", "label": "Pulso consultas", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Inventario tablas",
+      "category": "custom",
+      "preset_key": "matudb:tables_guard",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 210,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#06b6d4" },
+        "flow": { "nodes": [{ "id": "a", "label": "Inventario tablas", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Salud esquema",
+      "category": "support",
+      "preset_key": "matudb:schema_health",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 165,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#10b981" },
+        "flow": { "nodes": [{ "id": "a", "label": "Salud esquema", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Salud API MatuDB",
+      "category": "performance",
+      "preset_key": "matudb:api_health",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 150,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#22c55e" },
+        "flow": { "nodes": [{ "id": "a", "label": "Salud API MatuDB", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Latencia DB",
+      "category": "performance",
+      "preset_key": "matudb:db_latency",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 175,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#f59e0b" },
+        "flow": { "nodes": [{ "id": "a", "label": "Latencia DB", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Pulso almacenamiento",
+      "category": "performance",
+      "preset_key": "matudb:storage_pulse",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 220,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#ec4899" },
+        "flow": { "nodes": [{ "id": "a", "label": "Pulso almacenamiento", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Red / CORS",
+      "category": "support",
+      "preset_key": "matudb:network_hint",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 240,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#6366f1" },
+        "flow": { "nodes": [{ "id": "a", "label": "Red / CORS", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "WhatsApp panel",
+      "category": "support",
+      "preset_key": "matudb:whatsapp_hint",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 230,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#25D366" },
+        "flow": { "nodes": [{ "id": "a", "label": "WhatsApp panel", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Correo alertas",
+      "category": "support",
+      "preset_key": "matudb:email_guard",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 195,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#3b82f6" },
+        "flow": { "nodes": [{ "id": "a", "label": "Correo alertas", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Coordinador",
+      "category": "flow",
+      "preset_key": "matudb:coordinator",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 205,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#a855f7" },
+        "flow": { "nodes": [{ "id": "a", "label": "Coordinador", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "exportVersion": 1,
+      "name": "Tablas tipo usuario",
+      "category": "custom",
+      "preset_key": "matudb:users_tables",
+      "status": "idle",
+      "worker_enabled": false,
+      "worker_interval_sec": 185,
+      "worker_paused": false,
+      "workspace_config": {
+        "office": { "widthPct": 100, "heightPct": 100, "grid": 12 },
+        "visual": { "patrol": "perimeter", "accent": "#14b8a6" },
+        "flow": { "nodes": [{ "id": "a", "label": "Tablas tipo usuario", "x": 0, "y": 0 }], "edges": [] }
+      },
+      "suite_config": {
+        "stopOnError": false,
+        "cases": [
+          {
+            "id": "worker-placeholder",
+            "name": "Worker MatuDB",
+            "steps": [
+              { "id": "w", "kind": "noop", "action": "note", "target": "Preset MatuDB: tick automático en API." }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
