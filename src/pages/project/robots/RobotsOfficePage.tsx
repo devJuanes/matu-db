@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { robotsAPI } from '../../../lib/api';
 import toast from 'react-hot-toast';
 import {
@@ -18,6 +19,13 @@ import {
     ClipboardPaste,
     CheckCircle2,
     XCircle,
+    Sparkles,
+    ZoomIn,
+    ZoomOut,
+    MessageCircle,
+    GitBranch,
+    Pause,
+    PlayCircle,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -27,7 +35,18 @@ type RobotRow = {
     name: string;
     category: string;
     status: string;
-    workspace_config?: { visual?: { accent?: string } };
+    preset_key?: string | null;
+    worker_enabled?: boolean;
+    worker_interval_sec?: number;
+    worker_paused?: boolean;
+    worker_started_at?: string | null;
+    worker_last_tick_at?: string | null;
+    schedule_until?: string | null;
+    last_bubble?: string | null;
+    workspace_config?: {
+        visual?: { accent?: string };
+        flow?: { nodes?: { id: string; label?: string; x: number; y: number }[]; edges?: { source: string; target: string }[] };
+    };
     created_at: string;
     updated_at: string;
 };
@@ -51,6 +70,10 @@ export default function RobotsOfficePage() {
     const [importPasteText, setImportPasteText] = useState('');
     const [importCheck, setImportCheck] = useState<{ valid: boolean; errors: string[] } | null>(null);
     const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+    const [fleetMessages, setFleetMessages] = useState<any[]>([]);
+    const [sideTab, setSideTab] = useState<'runs' | 'chat' | 'worker' | 'flow'>('runs');
+    const [officeZoom, setOfficeZoom] = useState(1);
+    const [schedDraft, setSchedDraft] = useState('');
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const loadRobots = useCallback(async () => {
@@ -72,11 +95,52 @@ export default function RobotsOfficePage() {
     }, [projectId]);
 
     const anyRunning = robots.some((r) => r.status === 'running');
+    const anyWorker = robots.some((r) => r.worker_enabled && !r.worker_paused);
     useEffect(() => {
         if (!projectId || !anyRunning) return;
         const t = setInterval(() => loadRobots(), 1800);
         return () => clearInterval(t);
     }, [projectId, anyRunning, loadRobots]);
+
+    const loadMessages = useCallback(async () => {
+        if (!projectId) return;
+        try {
+            const r = await robotsAPI.messages(projectId, { limit: 120 });
+            setFleetMessages(r.data.data || []);
+        } catch {
+            /* ignore */
+        }
+    }, [projectId]);
+
+    useEffect(() => {
+        loadMessages();
+        const t = setInterval(loadMessages, 6000);
+        return () => clearInterval(t);
+    }, [loadMessages]);
+
+    useEffect(() => {
+        if (!projectId || !anyWorker) return;
+        const t = setInterval(() => {
+            loadRobots();
+            loadMessages();
+        }, 4500);
+        return () => clearInterval(t);
+    }, [projectId, anyWorker, loadRobots, loadMessages]);
+
+    useEffect(() => {
+        if (!projectId) return;
+        const base = (import.meta.env.VITE_MATUDB_URL || 'http://localhost:3001/api').replace(/\/api\/?$/i, '');
+        const socket = io(base, { transports: ['websocket', 'polling'], withCredentials: true });
+        socket.emit('subscribe_robots', { project_id: projectId });
+        const onEvt = () => {
+            loadRobots();
+            loadMessages();
+        };
+        socket.on('robots_event', onEvt);
+        return () => {
+            socket.disconnect();
+        };
+    }, [projectId, loadRobots, loadMessages]);
 
     const loadRuns = useCallback(async () => {
         if (!projectId || !selectedId) return;
@@ -290,17 +354,52 @@ export default function RobotsOfficePage() {
         }
     };
 
+    const handleSeedFleet = async () => {
+        if (!projectId) return;
+        try {
+            await robotsAPI.seedFleet(projectId);
+            toast.success('Equipo MatuDB instalado (12 robots). Activa workers en cada uno.');
+            loadRobots();
+        } catch {
+            toast.error('No se pudo instalar el equipo');
+        }
+    };
+
+    const patchRobot = async (id: string, patch: Record<string, unknown>) => {
+        if (!projectId) return;
+        try {
+            await robotsAPI.update(projectId, id, patch);
+            toast.success('Guardado');
+            loadRobots();
+        } catch {
+            toast.error('No se pudo guardar');
+        }
+    };
+
+    useEffect(() => {
+        if (!selected?.schedule_until) {
+            setSchedDraft('');
+            return;
+        }
+        const d = new Date(selected.schedule_until);
+        const p = (n: number) => String(n).padStart(2, '0');
+        setSchedDraft(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`);
+    }, [selected?.schedule_until, selectedId]);
+
+    const flowRobot = selected || robots[0];
+    const flowNodes = flowRobot?.workspace_config?.flow?.nodes || [];
+
     return (
-        <div style={{ padding: '32px 28px 48px', maxWidth: 1400, margin: '0 auto' }}>
+        <div style={{ padding: '32px 28px 48px', maxWidth: 1520, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--brand)', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10 }}>
                         <Bot size={14} /> Laboratorio de pruebas
                     </div>
                     <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.8px', margin: 0 }}>Oficina de robots</h1>
-                    <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontSize: 15, maxWidth: 560, lineHeight: 1.55 }}>
-                        Los robots ejecutan pasos reales contra <strong style={{ fontWeight: 700 }}>tu proyecto MatuDB</strong> (SQL solo lectura) y, si configuras{' '}
-                        <code style={{ fontSize: 12 }}>baseUrl</code>, contra <strong style={{ fontWeight: 700 }}>HuacApp, torre-control u otra API</strong> vía HTTP. Cada corrida guarda logs y errores (BD, red, status HTTP).
+                    <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontSize: 15, maxWidth: 620, lineHeight: 1.55 }}>
+                        Workers ligeros 24/7 en el <strong style={{ fontWeight: 700 }}>API MatuDB</strong>: seguridad SQL (<code style={{ fontSize: 12 }}>sql_history</code>), salud API, latencia DB, almacenamiento, coordinación y alertas por correo si algo es crítico.
+                        Siguen corriendo con <code style={{ fontSize: 12 }}>worker</code> activo hasta que pauses, detengas o llegue la hora límite. Suites manuales siguen disponibles.
                     </p>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end' }}>
@@ -320,6 +419,9 @@ export default function RobotsOfficePage() {
                     <button type="button" className="btn btn-outline" onClick={() => importInputRef.current?.click()} style={{ height: 44, padding: '0 18px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center' }}>
                         <Upload size={17} /> Importar JSON
                     </button>
+                    <button type="button" className="btn btn-outline" onClick={handleSeedFleet} style={{ height: 44, padding: '0 18px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center' }} title="12 roles: SQL, API, storage, correo…">
+                        <Sparkles size={17} /> Instalar equipo MatuDB
+                    </button>
                     <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={creating} style={{ height: 44, padding: '0 22px', borderRadius: 14, fontWeight: 700, gap: 8, display: 'flex', alignItems: 'center', boxShadow: '0 10px 20px rgba(16, 185, 129, 0.18)' }}>
                         {creating ? <span className="spinner-sm" style={{ width: 18, height: 18 }} /> : <Plus size={19} />}
                         Nuevo robot
@@ -327,7 +429,7 @@ export default function RobotsOfficePage() {
                 </div>
             </div>
 
-            <div className="robot-office-page-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr', gap: 24, alignItems: 'stretch' }}>
+            <div className="robot-office-page-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 400px) 1fr', gap: 24, alignItems: 'stretch' }}>
                 <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', paddingLeft: 4 }}>Equipo</div>
                     {loading ? (
@@ -340,6 +442,7 @@ export default function RobotsOfficePage() {
                         robots.map((r) => {
                             const active = selectedId === r.id;
                             const running = r.status === 'running';
+                            const working = !!(r.worker_enabled && !r.worker_paused);
                             return (
                                 <button
                                     key={r.id}
@@ -374,12 +477,12 @@ export default function RobotsOfficePage() {
                                             flexShrink: 0,
                                         }}
                                     >
-                                        {running ? <Activity size={22} /> : <Bot size={22} />}
+                                        {running ? <Activity size={22} /> : working ? <Activity size={22} style={{ opacity: 0.85 }} /> : <Bot size={22} />}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontWeight: 800, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
                                         <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, marginTop: 2 }}>
-                                            {r.category} · {running ? 'ejecutando' : 'en espera'}
+                                            {r.preset_key ? r.preset_key.replace('matudb:', '') : r.category} · {running ? 'suite' : working ? 'worker' : 'idle'}
                                         </div>
                                     </div>
                                 </button>
@@ -387,7 +490,55 @@ export default function RobotsOfficePage() {
                         })
                     )}
 
-                    {selected && (
+                    {robots.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                            {(
+                                [
+                                    { id: 'runs' as const, label: 'Corridas', icon: Activity },
+                                    { id: 'chat' as const, label: 'Chat', icon: MessageCircle },
+                                    { id: 'worker' as const, label: 'Worker', icon: PlayCircle },
+                                    { id: 'flow' as const, label: 'Flujo', icon: GitBranch },
+                                ]
+                            ).map(({ id, label, icon: Icon }) => (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    onClick={() => setSideTab(id)}
+                                    style={{
+                                        flex: '1 1 80px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 6,
+                                        padding: '8px 10px',
+                                        borderRadius: 12,
+                                        border: `1px solid ${sideTab === id ? 'var(--brand)' : 'var(--border)'}`,
+                                        background: sideTab === id ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-surface)',
+                                        color: sideTab === id ? 'var(--brand)' : 'var(--text-secondary)',
+                                        fontSize: 11,
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <Icon size={14} />
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {!selected && sideTab === 'runs' && robots.length > 0 && (
+                        <div style={{ marginTop: 8, padding: 16, background: 'var(--bg-surface)', borderRadius: 16, border: '1px dashed var(--border)', fontSize: 13, color: 'var(--text-muted)' }}>
+                            Selecciona un robot en la lista para ver corridas y ejecutar suites.
+                        </div>
+                    )}
+                    {!selected && sideTab === 'worker' && robots.length > 0 && (
+                        <div style={{ marginTop: 8, padding: 16, background: 'var(--bg-surface)', borderRadius: 16, border: '1px dashed var(--border)', fontSize: 13, color: 'var(--text-muted)' }}>
+                            Selecciona un robot para activar el worker en segundo plano, pausar o programar hora de parada.
+                        </div>
+                    )}
+
+                    {selected && sideTab === 'runs' && (
                         <div style={{ marginTop: 8, padding: 18, background: 'var(--bg-surface)', borderRadius: 18, border: '1px solid var(--border)' }}>
                             <div style={{ fontWeight: 800, marginBottom: 12, fontSize: 14 }}>{selected.name}</div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -405,7 +556,7 @@ export default function RobotsOfficePage() {
                                 </button>
                             </div>
                             <div style={{ marginTop: 16, fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Últimas corridas</div>
-                            <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', maxHeight: 320, overflowY: 'auto' }} className="custom-scrollbar">
+                            <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', maxHeight: 280, overflowY: 'auto' }} className="custom-scrollbar">
                                 {runs.length === 0 ? (
                                     <li style={{ fontSize: 13, color: 'var(--text-muted)' }}>Sin ejecuciones aún</li>
                                 ) : (
@@ -484,20 +635,152 @@ export default function RobotsOfficePage() {
                             </ul>
                         </div>
                     )}
+
+                    {sideTab === 'chat' && robots.length > 0 && (
+                        <div style={{ marginTop: 8, padding: 16, background: 'var(--bg-surface)', borderRadius: 18, border: '1px solid var(--border)', maxHeight: 420, overflowY: 'auto' }} className="custom-scrollbar">
+                            <div style={{ fontWeight: 800, marginBottom: 10, fontSize: 13 }}>Conversación del equipo</div>
+                            {fleetMessages.length === 0 ? (
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Sin mensajes aún. Activa workers o ejecuta suites.</div>
+                            ) : (
+                                [...fleetMessages].reverse().map((m) => (
+                                    <div key={m.id} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand)' }}>{m.robot_name || 'Robot'}</div>
+                                        <div style={{ fontSize: 13, marginTop: 4, lineHeight: 1.45 }}>{m.body}</div>
+                                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                                            {formatDistanceToNow(new Date(m.created_at), { addSuffix: true, locale: es })} · {m.kind}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    {selected && sideTab === 'worker' && (
+                        <div style={{ marginTop: 8, padding: 18, background: 'var(--bg-surface)', borderRadius: 18, border: '1px solid var(--border)' }}>
+                            <div style={{ fontWeight: 800, marginBottom: 12, fontSize: 14 }}>Worker 24/7 — {selected.name}</div>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, marginBottom: 12, cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={!!selected.worker_enabled}
+                                    onChange={(e) => patchRobot(selected.id, { worker_enabled: e.target.checked })}
+                                />
+                                Trabajar en segundo plano (API MatuDB)
+                            </label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    style={{ height: 36, borderRadius: 10, fontSize: 12, fontWeight: 700, gap: 6, display: 'flex', alignItems: 'center' }}
+                                    onClick={() => patchRobot(selected.id, { worker_paused: !selected.worker_paused })}
+                                >
+                                    {selected.worker_paused ? <PlayCircle size={16} /> : <Pause size={16} />}
+                                    {selected.worker_paused ? 'Reanudar' : 'Pausar'}
+                                </button>
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 6 }}>Intervalo (seg) — guarda al salir del campo</div>
+                                <input
+                                    type="number"
+                                    min={60}
+                                    max={86400}
+                                    key={`int-${selected.id}-${selected.worker_interval_sec}`}
+                                    defaultValue={selected.worker_interval_sec ?? 180}
+                                    onBlur={(e) => patchRobot(selected.id, { worker_interval_sec: Math.max(60, parseInt(e.target.value, 10) || 180) })}
+                                    style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-base)', color: 'var(--text-primary)' }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 6 }}>Parar automático (local)</div>
+                                <input
+                                    type="datetime-local"
+                                    value={schedDraft}
+                                    onChange={(e) => setSchedDraft(e.target.value)}
+                                    style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-base)', color: 'var(--text-primary)' }}
+                                />
+                                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                    <button type="button" className="btn btn-outline" style={{ height: 34, fontSize: 12 }} onClick={() => patchRobot(selected.id, { schedule_until: schedDraft ? new Date(schedDraft).toISOString() : null })}>
+                                        Guardar horario
+                                    </button>
+                                    <button type="button" className="btn btn-ghost" style={{ height: 34, fontSize: 12 }} onClick={() => patchRobot(selected.id, { schedule_until: null })}>
+                                        Quitar
+                                    </button>
+                                </div>
+                            </div>
+                            {selected.worker_started_at && selected.worker_enabled && !selected.worker_paused && (
+                                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                    Activo desde hace {formatDistanceToNow(new Date(selected.worker_started_at), { locale: es })} · último tick{' '}
+                                    {selected.worker_last_tick_at ? formatDistanceToNow(new Date(selected.worker_last_tick_at), { addSuffix: true, locale: es }) : '—'}
+                                </div>
+                            )}
+                            {selected.preset_key && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>Preset: {selected.preset_key}</div>}
+                        </div>
+                    )}
+
+                    {sideTab === 'flow' && flowRobot && (
+                        <div style={{ marginTop: 8, padding: 16, background: 'var(--bg-surface)', borderRadius: 18, border: '1px solid var(--border)', minHeight: 200 }}>
+                            <div style={{ fontWeight: 800, marginBottom: 12, fontSize: 13 }}>Diagrama — {flowRobot.name}</div>
+                            <div style={{ position: 'relative', height: 200, background: 'var(--bg-base)', borderRadius: 14, border: '1px dashed var(--border)', overflow: 'auto' }}>
+                                {flowNodes.length === 0 ? (
+                                    <div style={{ padding: 20, fontSize: 13, color: 'var(--text-muted)' }}>Sin nodos. Edita workspace_config.flow en la API o exporta/importa.</div>
+                                ) : (
+                                    flowNodes.map((n, i) => (
+                                        <div
+                                            key={n.id}
+                                            style={{
+                                                position: 'absolute',
+                                                left: 24 + (n.x || 0) + i * 12,
+                                                top: 24 + (n.y || 0) + i * 8,
+                                                padding: '10px 14px',
+                                                borderRadius: 12,
+                                                background: 'var(--bg-surface)',
+                                                border: '1px solid var(--brand)',
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                                            }}
+                                        >
+                                            {n.label || n.id}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </aside>
 
-                <section
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Zoom oficina</span>
+                        <button type="button" className="btn btn-outline" style={{ width: 40, height: 36, padding: 0, borderRadius: 10 }} onClick={() => setOfficeZoom((z) => Math.max(0.65, Math.round((z - 0.1) * 100) / 100))}>
+                            <ZoomOut size={18} />
+                        </button>
+                        <button type="button" className="btn btn-outline" style={{ width: 40, height: 36, padding: 0, borderRadius: 10 }} onClick={() => setOfficeZoom((z) => Math.min(1.35, Math.round((z + 0.1) * 100) / 100))}>
+                            <ZoomIn size={18} />
+                        </button>
+                    </div>
+                    <section
                     className="robot-office-wrap"
                     style={{
                         position: 'relative',
-                        minHeight: 420,
+                        flex: 1,
+                        minHeight: 480,
+                        maxHeight: 'min(78vh, 820px)',
                         borderRadius: 24,
                         border: '1px solid var(--border)',
                         background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-base) 100%)',
-                        overflow: 'hidden',
+                        overflow: 'auto',
                         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
                     }}
                 >
+                    <div
+                        style={{
+                            transform: `scale(${officeZoom})`,
+                            transformOrigin: 'top center',
+                            minHeight: 520,
+                            width: '100%',
+                            position: 'relative',
+                        }}
+                    >
                     <div className="robot-office-sky" />
                     <div className="robot-office-floor">
                         <div className="robot-office-grid" aria-hidden />
@@ -522,21 +805,28 @@ export default function RobotsOfficePage() {
                             const duration = 11 + (h % 7000) / 1000;
                             const accent = r.workspace_config?.visual?.accent || ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#06b6d4'][h % 5];
                             const running = r.status === 'running';
+                            const working = !!(r.worker_enabled && !r.worker_paused);
                             return (
                                 <div
                                     key={r.id}
-                                    className={`robot-sprite ${running ? 'robot-sprite--running' : ''}`}
+                                    className={`robot-sprite ${running ? 'robot-sprite--running' : ''} ${working ? 'robot-sprite--working' : ''}`}
                                     style={
                                         {
                                             ['--robot-delay' as string]: `${delay}s`,
-                                            ['--robot-duration' as string]: `${running ? Math.max(5, duration - 4) : duration}s`,
+                                            ['--robot-duration' as string]: `${running || working ? Math.max(5, duration - 4) : duration}s`,
                                             ['--robot-accent' as string]: accent,
                                         } as React.CSSProperties
                                     }
                                     title={r.name}
                                 >
+                                    {r.last_bubble && (
+                                        <div className="robot-bubble" role="status">
+                                            <span>{r.last_bubble}</span>
+                                        </div>
+                                    )}
                                     <div className="robot-sprite-inner">
                                         <Bot size={22} strokeWidth={2.2} />
+                                        {working && <span className="robot-typing" aria-hidden />}
                                     </div>
                                     <span className="robot-sprite-label">{r.name}</span>
                                 </div>
@@ -551,7 +841,9 @@ export default function RobotsOfficePage() {
                             </div>
                         )}
                     </div>
+                    </div>
                 </section>
+                </div>
             </div>
 
             {suiteModal && (
@@ -834,6 +1126,53 @@ export default function RobotsOfficePage() {
                 .robot-sprite--running .robot-sprite-inner {
                     animation: robot-bob 0.45s ease-in-out infinite alternate;
                     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35), 0 8px 20px rgba(0,0,0,0.18);
+                }
+                .robot-sprite--working .robot-sprite-inner {
+                    animation: robot-work-pulse 1.2s ease-in-out infinite;
+                }
+                @keyframes robot-work-pulse {
+                    0%, 100% { filter: brightness(1); box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+                    50% { filter: brightness(1.08); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25), 0 8px 20px rgba(0,0,0,0.12); }
+                }
+                .robot-bubble {
+                    position: absolute;
+                    bottom: 100%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    margin-bottom: 8px;
+                    max-width: 200px;
+                    z-index: 8;
+                    animation: robot-bubble-in 0.35s ease-out;
+                }
+                .robot-bubble span {
+                    display: block;
+                    padding: 8px 10px;
+                    border-radius: 14px 14px 14px 4px;
+                    background: var(--bg-surface);
+                    border: 1px solid var(--border);
+                    font-size: 10px;
+                    font-weight: 700;
+                    line-height: 1.35;
+                    color: var(--text-primary);
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+                }
+                @keyframes robot-bubble-in {
+                    from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+                    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+                }
+                .robot-sprite-inner { position: relative; }
+                .robot-typing {
+                    position: absolute;
+                    right: -4px;
+                    bottom: -2px;
+                    width: 22px;
+                    height: 8px;
+                    background: radial-gradient(circle, #fff 2px, transparent 2px) 0 50% / 7px 8px repeat-x;
+                    animation: robot-dots 0.9s steps(3) infinite;
+                    opacity: 0.9;
+                }
+                @keyframes robot-dots {
+                    to { background-position: 21px 50%; }
                 }
                 @keyframes robot-bob {
                     from { transform: translateY(0); }

@@ -138,6 +138,9 @@ export const robotsAPI = {
         api.get(`/projects/${pid}/robots/${id}/runs`, { params }),
     getRun: (pid: string, robotId: string, runId: string) =>
         api.get(`/projects/${pid}/robots/${robotId}/runs/${runId}`),
+    messages: (pid: string, params?: { limit?: number; channel?: string }) =>
+        api.get(`/projects/${pid}/robots/messages`, { params }),
+    seedFleet: (pid: string) => api.post(`/projects/${pid}/robots/seed-fleet`),
 };
 
 // ── WhatsApp (sesión global del servidor API, JWT) ─────────
