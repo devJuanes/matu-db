@@ -27,7 +27,9 @@ import {
     MessagesSquare,
     MessageCircle,
     Bot,
-    CreditCard
+    CreditCard,
+    PanelLeftClose,
+    Menu
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
@@ -38,6 +40,7 @@ export default function ProjectLayout() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [project, setProject] = useState<any>(null);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     useEffect(() => {
         if (!projectId) return;
@@ -88,15 +91,16 @@ export default function ProjectLayout() {
         }}>
             {/* Sidebar */}
             <aside style={{
-                width: 280,
+                width: sidebarCollapsed ? 0 : 280,
                 background: 'var(--bg-surface)',
-                borderRight: '1px solid var(--border)',
+                borderRight: sidebarCollapsed ? 'none' : '1px solid var(--border)',
                 display: 'flex',
                 flexDirection: 'column',
                 flexShrink: 0,
                 overflow: 'hidden',
                 zIndex: 100,
-                boxShadow: '10px 0 30px rgba(0,0,0,0.02)'
+                boxShadow: sidebarCollapsed ? 'none' : '10px 0 30px rgba(0,0,0,0.02)',
+                transition: 'width 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease'
             }}>
                 {/* Brand Header */}
                 <div style={{ padding: '28px 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -216,6 +220,29 @@ export default function ProjectLayout() {
                 background: 'var(--bg-base)',
                 position: 'relative'
             }}>
+                <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setSidebarCollapsed((s) => !s)}
+                    style={{
+                        position: 'absolute',
+                        top: 12,
+                        left: 12,
+                        zIndex: 120,
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg-surface)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--text-secondary)'
+                    }}
+                    title={sidebarCollapsed ? 'Mostrar menú lateral' : 'Ocultar menú lateral'}
+                >
+                    {sidebarCollapsed ? <Menu size={18} /> : <PanelLeftClose size={18} />}
+                </button>
                 <div style={{ height: '100%', position: 'relative' }}>
                     {project ? <Outlet context={{ project, setProject }} /> : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, justifyContent: 'center', alignItems: 'center', height: '100%' }}>

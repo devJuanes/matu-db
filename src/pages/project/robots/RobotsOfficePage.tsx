@@ -28,6 +28,8 @@ import {
     PlayCircle,
     Zap,
     Users,
+    Phone,
+    Clock3,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -82,13 +84,13 @@ function expandRobotImports(parsed: unknown): Record<string, unknown>[] {
 /** Puesto fijo en la oficina (por índice) para avatares en mesa. */
 function deskPositionPct(index: number, total: number): { left: string; top: string } {
     if (total <= 0) return { left: '50%', top: '52%' };
-    const cols = Math.min(5, Math.max(1, Math.ceil(Math.sqrt(total + 2))));
+    const cols = Math.min(6, Math.max(2, Math.ceil(Math.sqrt(total + 4))));
     const rows = Math.ceil(total / cols);
     const row = Math.floor(index / cols);
     const col = index % cols;
-    const marginX = 7;
-    const marginTop = 26;
-    const marginBot = 14;
+    const marginX = 5;
+    const marginTop = 20;
+    const marginBot = 10;
     const width = 100 - 2 * marginX;
     const height = 100 - marginTop - marginBot;
     const cellW = width / cols;
@@ -96,6 +98,48 @@ function deskPositionPct(index: number, total: number): { left: string; top: str
     const left = marginX + col * cellW + cellW * 0.5;
     const top = marginTop + row * cellH + cellH * 0.52;
     return { left: `${left}%`, top: `${top}%` };
+}
+
+type TaskPreset = 'sql_notify' | 'table_snapshot';
+
+function taskSuiteConfig(opts: {
+    taskType: TaskPreset;
+    sqlText: string;
+    tableName: string;
+    notifyChannel: 'email' | 'whatsapp' | 'both';
+    whatsappPhone: string;
+    name: string;
+}) {
+    const safeTable = String(opts.tableName || '').trim().replace(/[^a-zA-Z0-9_]/g, '');
+    const sql =
+        opts.taskType === 'table_snapshot'
+            ? `SELECT * FROM "${safeTable || 'users'}" LIMIT 50`
+            : (opts.sqlText || 'SELECT NOW() AS ok');
+    return {
+        stopOnError: true,
+        cases: [
+            {
+                id: 'main-task',
+                name: 'Tarea programada',
+                steps: [
+                    {
+                        id: 'sql-task',
+                        kind: 'sql',
+                        sql,
+                        minRows: 0,
+                    },
+                    {
+                        id: 'notify',
+                        kind: 'notify',
+                        channel: opts.notifyChannel,
+                        phone: opts.whatsappPhone || undefined,
+                        subject: `Robot ${opts.name} · Confirmación de tarea`,
+                        message: `Robot "${opts.name}" ejecutó su tarea correctamente en MatuDB.`,
+                    },
+                ],
+            },
+        ],
+    };
 }
 
 export default function RobotsOfficePage() {
@@ -117,6 +161,17 @@ export default function RobotsOfficePage() {
     const [schedDraft, setSchedDraft] = useState('');
     const [globalSchedDraft, setGlobalSchedDraft] = useState('');
     const [runningAllSuites, setRunningAllSuites] = useState(false);
+    const [newRobotModal, setNewRobotModal] = useState(false);
+    const [taskForm, setTaskForm] = useState({
+        name: '',
+        taskType: 'sql_notify' as TaskPreset,
+        sqlText: 'SELECT NOW() AS hora_servidor',
+        tableName: 'users',
+        notifyChannel: 'email' as 'email' | 'whatsapp' | 'both',
+        whatsappPhone: '',
+        dailyAt: '',
+        workerIntervalSec: 300,
+    });
     const globalIntervalRef = useRef<HTMLInputElement>(null);
     const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -216,16 +271,57 @@ export default function RobotsOfficePage() {
     }, [projectId, selectedId, selected?.status, loadRuns, loadRobots]);
 
     const handleCreate = async () => {
+        setTaskForm((f) => ({
+            ...f,
+            name: `Empleado robot ${robots.length + 1}`,
+        }));
+        setNewRobotModal(true);
+    };
+
+    const createTaskRobot = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!projectId) return;
+        if (!taskForm.name.trim()) {
+            toast.error('Ponle nombre al robot');
+            return;
+        }
+        if ((taskForm.notifyChannel === 'whatsapp' || taskForm.notifyChannel === 'both') && !taskForm.whatsappPhone.trim()) {
+            toast.error('Para WhatsApp debes indicar número');
+            return;
+        }
         try {
             setCreating(true);
-            const res = await robotsAPI.create(projectId, {
-                name: `Robot ${robots.length + 1}`,
-                category: 'flow',
+            const suite = taskSuiteConfig({
+                taskType: taskForm.taskType,
+                sqlText: taskForm.sqlText,
+                tableName: taskForm.tableName,
+                notifyChannel: taskForm.notifyChannel,
+                whatsappPhone: taskForm.whatsappPhone,
+                name: taskForm.name.trim(),
             });
-            toast.success('Robot creado');
+            const payload = {
+                name: taskForm.name.trim(),
+                category: 'custom',
+                suite_config: suite,
+                worker_enabled: true,
+                worker_paused: false,
+                worker_interval_sec: Math.max(30, Number(taskForm.workerIntervalSec) || 300),
+                workspace_config: {
+                    visual: { accent: '#10b981' },
+                    flow: { nodes: [], edges: [] },
+                    task: {
+                        type: taskForm.taskType,
+                        dailyAt: taskForm.dailyAt || null,
+                        notify: taskForm.notifyChannel,
+                    },
+                },
+            };
+            const res = await robotsAPI.create(projectId, payload);
+            toast.success('Empleado robot creado');
+            setNewRobotModal(false);
             await loadRobots();
             setSelectedId(res.data.data.id);
+            setSideTab('runs');
         } catch {
             toast.error('No se pudo crear el robot');
         } finally {
@@ -708,7 +804,7 @@ export default function RobotsOfficePage() {
                     </button>
                     <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={creating} style={{ height: 34, padding: '0 14px', borderRadius: 10, fontWeight: 700, fontSize: 12, gap: 6, display: 'flex', alignItems: 'center' }}>
                         {creating ? <span className="spinner-sm" style={{ width: 14, height: 14 }} /> : <Plus size={16} />}
-                        Nuevo robot
+                        Nuevo empleado robot
                     </button>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>
                         Workers y parada se aplican a <strong>toda la oficina</strong>; el panel izquierdo afiná por robot.
@@ -1099,7 +1195,7 @@ export default function RobotsOfficePage() {
                             const running = r.status === 'running';
                             const working = !!(r.worker_enabled && !r.worker_paused);
                             return (
-                                <div
+                                <button
                                     key={r.id}
                                     className={`robot-sprite robot-sprite--desk ${running ? 'robot-sprite--running' : ''} ${working ? 'robot-sprite--working' : ''}`}
                                     style={
@@ -1111,6 +1207,11 @@ export default function RobotsOfficePage() {
                                         } as React.CSSProperties
                                     }
                                     title={r.name}
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedId(r.id);
+                                        setSideTab('runs');
+                                    }}
                                 >
                                     {r.last_bubble && (
                                         <div className="robot-bubble" role="status">
@@ -1124,7 +1225,7 @@ export default function RobotsOfficePage() {
                                         {working && <span className="robot-typing" aria-hidden />}
                                     </div>
                                     <span className="robot-sprite-label">{r.name}</span>
-                                </div>
+                                </button>
                             );
                         })}
 
@@ -1140,6 +1241,105 @@ export default function RobotsOfficePage() {
                 </section>
                 </div>
             </div>
+
+            {newRobotModal && (
+                <div
+                    role="dialog"
+                    aria-modal
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.45)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 220,
+                        padding: 20,
+                    }}
+                    onClick={() => setNewRobotModal(false)}
+                >
+                    <form
+                        onSubmit={createTaskRobot}
+                        style={{
+                            width: 'min(680px, 100%)',
+                            maxHeight: '88vh',
+                            overflow: 'auto',
+                            background: 'var(--bg-surface)',
+                            borderRadius: 20,
+                            border: '1px solid var(--border)',
+                            padding: 22,
+                            boxShadow: 'var(--shadow-lg)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 14,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>Nuevo empleado robot</h3>
+                        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+                            Crea un robot con tarea automática (SQL + confirmación por email/WhatsApp). Luego puedes editar su suite JSON si quieres flujos más complejos.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}>Nombre del robot</label>
+                                <input className="input" value={taskForm.name} onChange={(e) => setTaskForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ej: Robot Finanzas" style={{ width: '100%', height: 40, marginTop: 6 }} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}>Tipo de tarea</label>
+                                <select className="input" value={taskForm.taskType} onChange={(e) => setTaskForm((f) => ({ ...f, taskType: e.target.value as TaskPreset }))} style={{ width: '100%', height: 40, marginTop: 6 }}>
+                                    <option value="sql_notify">Ejecutar SQL y notificar</option>
+                                    <option value="table_snapshot">Consultar tabla y notificar</option>
+                                </select>
+                            </div>
+                        </div>
+                        {taskForm.taskType === 'sql_notify' ? (
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}>SQL (solo lectura)</label>
+                                <textarea className="input" value={taskForm.sqlText} onChange={(e) => setTaskForm((f) => ({ ...f, sqlText: e.target.value }))} style={{ width: '100%', minHeight: 92, marginTop: 6, fontFamily: 'var(--font-mono)' }} />
+                            </div>
+                        ) : (
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}>Tabla a consultar</label>
+                                <input className="input" value={taskForm.tableName} onChange={(e) => setTaskForm((f) => ({ ...f, tableName: e.target.value }))} style={{ width: '100%', height: 40, marginTop: 6 }} />
+                            </div>
+                        )}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}><Clock3 size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Hora diaria (opcional)</label>
+                                <input type="time" className="input" value={taskForm.dailyAt} onChange={(e) => setTaskForm((f) => ({ ...f, dailyAt: e.target.value }))} style={{ width: '100%', height: 40, marginTop: 6 }} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}>Intervalo worker (seg)</label>
+                                <input type="number" min={30} className="input" value={taskForm.workerIntervalSec} onChange={(e) => setTaskForm((f) => ({ ...f, workerIntervalSec: Number(e.target.value) || 300 }))} style={{ width: '100%', height: 40, marginTop: 6 }} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}>Notificación</label>
+                                <select className="input" value={taskForm.notifyChannel} onChange={(e) => setTaskForm((f) => ({ ...f, notifyChannel: e.target.value as 'email' | 'whatsapp' | 'both' }))} style={{ width: '100%', height: 40, marginTop: 6 }}>
+                                    <option value="email">Solo email admin</option>
+                                    <option value="whatsapp">Solo WhatsApp</option>
+                                    <option value="both">Email + WhatsApp</option>
+                                </select>
+                            </div>
+                        </div>
+                        {(taskForm.notifyChannel === 'whatsapp' || taskForm.notifyChannel === 'both') && (
+                            <div>
+                                <label style={{ fontSize: 12, fontWeight: 800 }}><Phone size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Número WhatsApp</label>
+                                <input className="input" value={taskForm.whatsappPhone} onChange={(e) => setTaskForm((f) => ({ ...f, whatsappPhone: e.target.value }))} placeholder="57XXXXXXXXXX" style={{ width: '100%', height: 40, marginTop: 6 }} />
+                            </div>
+                        )}
+                        <div style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.06)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                            <strong>Tip:</strong> si defines hora diaria, el worker intenta ejecutar una vez por día cuando pase esa hora. La confirmación por email usa <code style={{ fontSize: 11 }}>MATUDB_ADMIN_NOTIFY_EMAIL</code>; para WhatsApp usa el número que pongas aquí.
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                            <button type="button" className="btn btn-outline" onClick={() => setNewRobotModal(false)}>Cancelar</button>
+                            <button type="submit" className="btn btn-primary" disabled={creating} style={{ gap: 8, display: 'flex', alignItems: 'center' }}>
+                                {creating ? <span className="spinner-sm" style={{ width: 14, height: 14 }} /> : <Plus size={16} />}
+                                Crear robot
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {suiteModal && (
                 <div
@@ -1174,7 +1374,7 @@ export default function RobotsOfficePage() {
                         <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
                             Pasos <code style={{ fontSize: 11 }}>kind: &quot;sql&quot;</code> ejecutan <strong>SELECT/WITH</strong> en el esquema de este proyecto. Pasos{' '}
                             <code style={{ fontSize: 11 }}>kind: &quot;http&quot;</code> llaman a tu app: define <code style={{ fontSize: 11 }}>baseUrl</code> (ej. Vite torre-control) y <code style={{ fontSize: 11 }}>path</code>, o <code style={{ fontSize: 11 }}>url</code> absoluta.{' '}
-                            <code style={{ fontSize: 11 }}>noop</code> = solo documentación.
+                            <code style={{ fontSize: 11 }}>notify</code> envía confirmación por email/WhatsApp, y <code style={{ fontSize: 11 }}>noop</code> = solo documentación.
                         </p>
                         <textarea
                             value={suiteModal.json}
@@ -1394,7 +1594,12 @@ export default function RobotsOfficePage() {
                     flex-direction: column;
                     align-items: center;
                     gap: 4px;
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    cursor: pointer;
                 }
+                .robot-sprite:hover .robot-sprite-label { color: var(--brand); }
                 .robot-sprite--desk {
                     left: var(--desk-left, 50%);
                     top: var(--desk-top, 50%);
