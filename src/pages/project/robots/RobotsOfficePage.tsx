@@ -322,8 +322,16 @@ export default function RobotsOfficePage() {
             await loadRobots();
             setSelectedId(res.data.data.id);
             setSideTab('runs');
-        } catch {
-            toast.error('No se pudo crear el robot');
+        } catch (err: any) {
+            const msg = err?.response?.data?.message;
+            const errors = Array.isArray(err?.response?.data?.errors)
+                ? err.response.data.errors.join(' · ')
+                : '';
+            if (typeof msg === 'string') {
+                toast.error(errors ? `${msg}: ${errors}` : msg);
+            } else {
+                toast.error('No se pudo crear el robot');
+            }
         } finally {
             setCreating(false);
         }
