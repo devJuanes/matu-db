@@ -20,7 +20,7 @@ import {
     MessageSquare, ClipboardList, X, Play, Settings, Clock,
     ChevronRight, Activity, Sparkles, Layout, Cpu,
     Layers, Link as LinkIcon, AlertCircle, Info, Trash2,
-    Code, Terminal, Bell, Bot, CheckSquare, Download, Upload
+    Code, Terminal, Bell, Bot, CheckSquare, Download, Upload, PhoneCall
 } from 'lucide-react';
 
 // --- Custom Nodes Definition ---
@@ -116,7 +116,12 @@ const ConditionNode = ({ data, isConnectable }: any) => {
 
 // Action Node
 const ActionNode = ({ data, isConnectable }: any) => {
-    const Icon = data.icon === 'mail' ? Mail : data.icon === 'database' ? Database : data.icon === 'whatsapp' ? MessageSquare : data.icon === 'globe' ? Globe : Zap;
+    const Icon =
+        data.icon === 'mail' ? Mail :
+            data.icon === 'database' ? Database :
+                data.icon === 'whatsapp' ? MessageSquare :
+                    data.icon === 'phone' || data.icon === 'call' ? PhoneCall :
+                        data.icon === 'globe' ? Globe : Zap;
     return (
         <div style={{
             background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 16, width: 240, overflow: 'hidden', boxShadow: '0 15px 35px rgba(0,0,0,0.2)'
@@ -420,6 +425,13 @@ export default function AutomationEditor() {
                                 <div style={{ fontSize: 10, opacity: 0.6 }}>Alerta por correo</div>
                             </div>
                         </button>
+                        <button className="node-lib-btn" onClick={() => addNode('action', 'Llamada de Voz', 'phone', 'Genera una llamada saliente con TTS.')}>
+                            <div className="icon-wrap" style={{ color: '#0ea5e9', background: 'rgba(14, 165, 233, 0.12)' }}><PhoneCall size={16} /></div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700 }}>Llamada</div>
+                                <div style={{ fontSize: 10, opacity: 0.6 }}>Gateway Android TTS</div>
+                            </div>
+                        </button>
                         <button className="node-lib-btn" onClick={() => addNode('action', 'Integración HTTP', 'link')}>
                             <div className="icon-wrap" style={{ color: '#6366f1', background: 'rgba(99, 102, 241, 0.1)' }}><LinkIcon size={16} /></div>
                             <div style={{ flex: 1 }}>
@@ -600,6 +612,46 @@ export default function AutomationEditor() {
                                         <div className="form-group">
                                             <label className="form-label">Plantilla de Mensaje</label>
                                             <textarea className="input" style={{ height: 160, padding: 16, lineHeight: 1.6 }} value={(selectedNode.data.message as string) || ''} onChange={e => updateNodeData({ message: e.target.value })} placeholder="Hola! Hemos detectado un cambio en {campo}..." />
+                                        </div>
+                                    </>
+                                )}
+
+                                {(selectedNode.data.icon === 'phone' || selectedNode.data.icon === 'call') && (
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">Número destino (llamada)</label>
+                                            <input
+                                                className="input"
+                                                value={(selectedNode.data.phone as string) || ''}
+                                                onChange={e => updateNodeData({ phone: e.target.value })}
+                                                placeholder="+573023580862 o {adminPhone}"
+                                                style={{ height: 44 }}
+                                            />
+                                            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.45 }}>
+                                                Si lo dejas vacío, usa <code>{'VOICE_GATEWAY_DEFAULT_PHONE'}</code> desde la API.
+                                            </p>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Texto a reproducir (TTS)</label>
+                                            <textarea
+                                                className="input"
+                                                style={{ height: 160, padding: 16, lineHeight: 1.6 }}
+                                                value={(selectedNode.data.message as string) || ''}
+                                                onChange={e => updateNodeData({ message: e.target.value })}
+                                                placeholder="Hola, se abrió un nuevo soporte de {clientName}. Revisa el chat en vivo."
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Duración máxima (segundos)</label>
+                                            <input
+                                                className="input"
+                                                type="number"
+                                                min={5}
+                                                max={120}
+                                                value={Number((selectedNode.data.maxSeconds as number) || 20)}
+                                                onChange={e => updateNodeData({ maxSeconds: Number(e.target.value || 20) })}
+                                                style={{ height: 44 }}
+                                            />
                                         </div>
                                     </>
                                 )}

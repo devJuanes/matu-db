@@ -180,3 +180,11 @@ export const notificationsAPI = {
     send: (pid: string, data: any) => api.post(`/projects/${pid}/notifications/send`, data),
     getLogs: (pid: string, appId: string) => api.get(`/projects/${pid}/notifications/apps/${appId}/logs`),
 };
+
+// ── Voice Gateway (Android calls) ───────────────────────────
+export const voiceGatewayAPI = {
+    getPairingConfig: (pid: string) => api.get(`/projects/${pid}/voice-gateway/pairing-config`),
+    listJobs: (pid: string, params?: { limit?: number }) =>
+        api.get(`/projects/${pid}/voice-gateway/jobs`, { params }),
+    createJob: (pid: string, data: any) => api.post(`/projects/${pid}/voice-gateway/jobs`, data),
+};

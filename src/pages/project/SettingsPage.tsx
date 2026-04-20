@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext, useParams, useNavigate } from 'react-router-dom';
-import { projectsAPI, keysAPI } from '../../lib/api';
+import { projectsAPI, keysAPI, voiceGatewayAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
+import QRCode from 'qrcode';
 import {
     Save, Trash2, AlertTriangle, Key, Eye, EyeOff,
     Copy, Code, Info, Globe, Shield, Zap, Lock,
     Settings as SettingsIcon, Database,
     Server, Activity, ShieldCheck, Mail, ExternalLink,
-    ChevronRight, CreditCard, Clock, MapPin
+    ChevronRight, CreditCard, Clock, MapPin, Smartphone, RefreshCcw
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -20,10 +21,14 @@ export default function SettingsPage() {
     const [keys, setKeys] = useState<{ anon_key?: string; service_role_key?: string }>({});
     const [showKey, setShowKey] = useState<'anon' | 'service' | null>(null);
     const [codeTab, setCodeTab] = useState<'upload' | 'list' | 'delete'>('upload');
+    const [pairingConfig, setPairingConfig] = useState<any | null>(null);
+    const [pairingQr, setPairingQr] = useState('');
+    const [pairingLoading, setPairingLoading] = useState(false);
 
     useEffect(() => {
         if (projectId) {
             keysAPI.list(projectId).then(r => setKeys(r.data.data || {})).catch(() => { });
+            loadPairingConfig(projectId);
         }
     }, [projectId]);
 
@@ -32,6 +37,33 @@ export default function SettingsPage() {
     const copyToClipboard = (text: string, label = 'Copiado al portapapeles') => {
         navigator.clipboard.writeText(text);
         toast.success(label);
+    };
+
+    const loadPairingConfig = async (pid: string) => {
+        try {
+            setPairingLoading(true);
+            const res = await voiceGatewayAPI.getPairingConfig(pid);
+            const payload = res.data?.data?.pairing || null;
+            const qrText = String(res.data?.data?.qrText || '');
+            if (!payload || !qrText) {
+                setPairingConfig(null);
+                setPairingQr('');
+                return;
+            }
+            setPairingConfig(payload);
+            const dataUrl = await QRCode.toDataURL(qrText, {
+                margin: 2,
+                width: 260,
+            });
+            setPairingQr(dataUrl);
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'No se pudo generar QR de vinculación';
+            toast.error(msg);
+            setPairingConfig(null);
+            setPairingQr('');
+        } finally {
+            setPairingLoading(false);
+        }
     };
 
     const saveChanges = async (e: React.FormEvent) => {
@@ -280,6 +312,90 @@ const { data } = await res.json();` :
 });`
                                         }
                                     </pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Voice Gateway Pairing */}
+                    <div style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 24,
+                        overflow: 'hidden',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+                    }}>
+                        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <Smartphone size={20} color="var(--brand)" /> Gateway Android (Llamadas)
+                            </h3>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={() => projectId && loadPairingConfig(projectId)}
+                                disabled={pairingLoading}
+                                style={{ gap: 8, height: 38, borderRadius: 10 }}
+                            >
+                                <RefreshCcw size={15} /> {pairingLoading ? 'Actualizando...' : 'Actualizar QR'}
+                            </button>
+                        </div>
+                        <div style={{ padding: 32 }}>
+                            <p style={{ marginTop: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                                Abre la app <strong>MatuCall</strong> en el Android de la empresa y escanea este QR.
+                                La app se configura sola (URL, proyecto y token) sin copiar nada manual.
+                            </p>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr)', gap: 24, alignItems: 'start' }}>
+                                <div style={{
+                                    width: 280,
+                                    minHeight: 280,
+                                    borderRadius: 16,
+                                    border: '1px solid var(--border)',
+                                    background: 'var(--bg-base)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    overflow: 'hidden'
+                                }}>
+                                    {pairingLoading ? (
+                                        <span className="spinner-sm" style={{ width: 26, height: 26, borderWidth: 3, borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
+                                    ) : pairingQr ? (
+                                        <img src={pairingQr} alt="QR de vinculación gateway Android" style={{ width: 260, height: 260, display: 'block' }} />
+                                    ) : (
+                                        <div style={{ textAlign: 'center', padding: 16, fontSize: 12, color: 'var(--text-muted)' }}>
+                                            QR no disponible
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                    <div style={{ padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-base)' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 6 }}>Base URL</div>
+                                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, wordBreak: 'break-all' }}>
+                                            {pairingConfig?.baseUrl || '—'}
+                                        </div>
+                                    </div>
+                                    <div style={{ padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-base)' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 6 }}>Project ID</div>
+                                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, wordBreak: 'break-all' }}>
+                                            {pairingConfig?.projectId || projectId || '—'}
+                                        </div>
+                                    </div>
+                                    <div style={{ padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-base)' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 6 }}>Device ID sugerido</div>
+                                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, wordBreak: 'break-all' }}>
+                                            {pairingConfig?.suggestedDeviceId || 'gateway-android-01'}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() => copyToClipboard(JSON.stringify(pairingConfig || {}, null, 2), 'JSON de vinculación copiado')}
+                                            style={{ height: 40, borderRadius: 10 }}
+                                            disabled={!pairingConfig}
+                                        >
+                                            <Copy size={14} style={{ marginRight: 8 }} /> Copiar JSON
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
