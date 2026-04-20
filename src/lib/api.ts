@@ -187,4 +187,7 @@ export const voiceGatewayAPI = {
     listJobs: (pid: string, params?: { limit?: number }) =>
         api.get(`/projects/${pid}/voice-gateway/jobs`, { params }),
     createJob: (pid: string, data: any) => api.post(`/projects/${pid}/voice-gateway/jobs`, data),
+    listPushJobs: (pid: string, params?: { limit?: number }) =>
+        api.get(`/projects/${pid}/voice-gateway/push/jobs`, { params }),
+    createPushJob: (pid: string, data: any) => api.post(`/projects/${pid}/voice-gateway/push/jobs`, data),
 };

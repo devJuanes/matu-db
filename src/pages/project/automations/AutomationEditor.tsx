@@ -20,7 +20,7 @@ import {
     MessageSquare, ClipboardList, X, Play, Settings, Clock,
     ChevronRight, Activity, Sparkles, Layout, Cpu,
     Layers, Link as LinkIcon, AlertCircle, Info, Trash2,
-    Code, Terminal, Bell, Bot, CheckSquare, Download, Upload, PhoneCall
+    Code, Terminal, Bell, Bot, CheckSquare, Download, Upload, PhoneCall, Smartphone
 } from 'lucide-react';
 
 // --- Custom Nodes Definition ---
@@ -121,6 +121,7 @@ const ActionNode = ({ data, isConnectable }: any) => {
             data.icon === 'database' ? Database :
                 data.icon === 'whatsapp' ? MessageSquare :
                     data.icon === 'phone' || data.icon === 'call' ? PhoneCall :
+                        data.icon === 'push' || data.icon === 'notification' ? Smartphone :
                         data.icon === 'globe' ? Globe : Zap;
     return (
         <div style={{
@@ -432,6 +433,13 @@ export default function AutomationEditor() {
                                 <div style={{ fontSize: 10, opacity: 0.6 }}>Gateway Android TTS</div>
                             </div>
                         </button>
+                        <button className="node-lib-btn" onClick={() => addNode('action', 'Push MatuCall', 'push', 'Envía notificación push a la app Android gateway.')}>
+                            <div className="icon-wrap" style={{ color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.12)' }}><Smartphone size={16} /></div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700 }}>Notificación Push</div>
+                                <div style={{ fontSize: 10, opacity: 0.6 }}>MatuCall Gateway</div>
+                            </div>
+                        </button>
                         <button className="node-lib-btn" onClick={() => addNode('action', 'Integración HTTP', 'link')}>
                             <div className="icon-wrap" style={{ color: '#6366f1', background: 'rgba(99, 102, 241, 0.1)' }}><LinkIcon size={16} /></div>
                             <div style={{ flex: 1 }}>
@@ -650,6 +658,43 @@ export default function AutomationEditor() {
                                                 max={120}
                                                 value={Number((selectedNode.data.maxSeconds as number) || 20)}
                                                 onChange={e => updateNodeData({ maxSeconds: Number(e.target.value || 20) })}
+                                                style={{ height: 44 }}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {(selectedNode.data.icon === 'push' || selectedNode.data.icon === 'notification') && (
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">Título de notificación</label>
+                                            <input
+                                                className="input"
+                                                value={(selectedNode.data.title as string) || ''}
+                                                onChange={e => updateNodeData({ title: e.target.value })}
+                                                placeholder="Nueva alerta en Torre Control"
+                                                style={{ height: 44 }}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Mensaje push</label>
+                                            <textarea
+                                                className="input"
+                                                style={{ height: 160, padding: 16, lineHeight: 1.6 }}
+                                                value={(selectedNode.data.message as string) || ''}
+                                                onChange={e => updateNodeData({ message: e.target.value })}
+                                                placeholder="Se registró una nueva nota: {title}"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Prioridad (1-100)</label>
+                                            <input
+                                                className="input"
+                                                type="number"
+                                                min={1}
+                                                max={100}
+                                                value={Number((selectedNode.data.priority as number) || 50)}
+                                                onChange={e => updateNodeData({ priority: Number(e.target.value || 50) })}
                                                 style={{ height: 44 }}
                                             />
                                         </div>
