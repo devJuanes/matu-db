@@ -11,6 +11,14 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function AutomationsList() {
+    const triggerLabel = (triggerType: string) => {
+        const t = String(triggerType || '').toLowerCase();
+        if (t === 'multi') return 'MULTI TABLE';
+        if (t === 'webhook') return 'WEBHOOK';
+        if (t.startsWith('table:')) return t.toUpperCase();
+        return (triggerType || 'UNKNOWN').toUpperCase();
+    };
+
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const [automations, setAutomations] = useState<any[]>([]);
@@ -250,7 +258,7 @@ export default function AutomationsList() {
                                                 borderRadius: 6,
                                                 letterSpacing: '0.5px'
                                             }}>
-                                                {auto.trigger_type.toUpperCase()}
+                                                {triggerLabel(auto.trigger_type)}
                                             </span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>

@@ -385,6 +385,9 @@ export default function AutomationEditor() {
                         <Sparkles size={12} /> Disparadores (Triggers)
                     </div>
                     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.45, padding: '0 6px 4px' }}>
+                            Puedes agregar varios triggers de tabla en un mismo flujo (modo multi-table).
+                        </div>
                         <button className="node-lib-btn" onClick={() => addNode('tableTrigger', 'Evento en Tabla', 'database', 'Escucha cambios en tus datos.')}>
                             <div className="icon-wrap" style={{ color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.1)' }}><Database size={16} /></div>
                             <div style={{ flex: 1 }}>
