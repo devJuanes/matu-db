@@ -29,7 +29,8 @@ import {
     Bot,
     CreditCard,
     PanelLeftClose,
-    Menu
+    Menu,
+    ChartColumnBig
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
@@ -54,6 +55,7 @@ export default function ProjectLayout() {
         { to: 'storage', label: t('sidebar.storage'), icon: HardDrive },
         { to: 'automations', label: 'Automatizaciones', icon: Zap },
         { to: 'robots', label: 'Robots', icon: Bot },
+        { to: 'metrics', label: 'Metricas', icon: ChartColumnBig },
         { to: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
         { to: 'apps', label: 'Aplicaciones', icon: Globe },
         { to: 'auth', label: t('sidebar.auth'), icon: Users },

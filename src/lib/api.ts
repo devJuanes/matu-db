@@ -124,6 +124,25 @@ export const automationsAPI = {
         api.get(`/projects/${pid}/automations/${id}/logs`, { params }),
 };
 
+// ── Metrics ────────────────────────────────────────────────
+export const metricsAPI = {
+    list: (pid: string) => api.get(`/projects/${pid}/metrics`),
+    create: (pid: string, data: Record<string, unknown>) => api.post(`/projects/${pid}/metrics`, data),
+    import: (pid: string, payload: Record<string, unknown>) => api.post(`/projects/${pid}/metrics/import`, payload),
+    get: (pid: string, id: string) => api.get(`/projects/${pid}/metrics/${id}`),
+    update: (pid: string, id: string, data: Record<string, unknown>) => api.put(`/projects/${pid}/metrics/${id}`, data),
+    delete: (pid: string, id: string) => api.delete(`/projects/${pid}/metrics/${id}`),
+    getData: (pid: string, id: string) => api.get(`/projects/${pid}/metrics/${id}/data`),
+    query: (pid: string, builder_config: Record<string, unknown>) => api.post(`/projects/${pid}/metrics/query`, { builder_config }),
+    exportJson: (pid: string, id: string) => api.get(`/projects/${pid}/metrics/${id}/export`),
+    getTables: (pid: string) => api.get(`/projects/${pid}/metrics/helper/tables`),
+    getTableColumns: (pid: string, table: string) => api.get(`/projects/${pid}/metrics/helper/tables/${table}/columns`),
+    exportExcel: (pid: string, id: string) =>
+        api.get(`/projects/${pid}/metrics/${id}/export/excel`, { responseType: 'blob' }),
+    exportPdf: (pid: string, id: string) =>
+        api.get(`/projects/${pid}/metrics/${id}/export/pdf`, { responseType: 'blob' }),
+};
+
 // ── Robots (testing / suites, import-export JSON) ─────────
 export const robotsAPI = {
     list: (pid: string) => api.get(`/projects/${pid}/robots`),

@@ -28,6 +28,9 @@ import SimulatorPage from './pages/project/SimulatorPage';
 import AutomationsList from './pages/project/automations/AutomationsList';
 import AutomationEditor from './pages/project/automations/AutomationEditor';
 import RobotsOfficePage from './pages/project/robots/RobotsOfficePage';
+import MetricsListPage from './pages/project/metrics/MetricsListPage';
+import MetricBuilderPage from './pages/project/metrics/MetricBuilderPage';
+import MetricsDashboardPage from './pages/project/metrics/MetricsDashboardPage';
 import MatriculaPage from './modules/matricula/MatriculaPage';
 import LandingPage from './pages/LandingPage';
 import { ProductPage, DevelopersPage, SolutionsPage, PricingPage, BlogPage } from './pages/marketing/MarketingPages';
@@ -188,6 +191,9 @@ export default function App() {
           <Route path="automations" element={<AutomationsList />} />
           <Route path="automations/:automationId" element={<AutomationEditor />} />
           <Route path="robots" element={<RobotsOfficePage />} />
+          <Route path="metrics" element={<MetricsListPage />} />
+          <Route path="metrics/:metricId/builder" element={<MetricBuilderPage />} />
+          <Route path="metrics/:metricId/dashboard" element={<MetricsDashboardPage />} />
           <Route path="keys" element={<ApiKeysPage />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
