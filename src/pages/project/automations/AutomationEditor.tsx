@@ -570,7 +570,7 @@ export default function AutomationEditor() {
                                         </div>
                                         {selectedNode.data.operator === 'changed_to' && (
                                             <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                                                Solo en <strong>UPDATE</strong>: se cumple si el campo pasó de otro valor a este. Requiere fila con <code style={{ fontSize: 11 }}>_old</code> en el motor (API MatuDB).
+                                                Solo en <strong>UPDATE</strong>: se cumple si el campo pasó de otro valor a este. Usa <code style={{ fontSize: 11 }}>__filled__</code> para disparar solo cuando el campo cambia de vacío a lleno. Requiere fila con <code style={{ fontSize: 11 }}>_old</code> en el motor (API MatuDB).
                                             </p>
                                         )}
                                     </>
