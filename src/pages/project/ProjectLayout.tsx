@@ -67,6 +67,7 @@ export default function ProjectLayout() {
         { to: 'notifications', label: 'Notificaciones', icon: MessagesSquare },
         { to: 'templates', label: 'Plantillas', icon: Mail },
         { to: 'payments', label: 'Pasarela de pago', icon: CreditCard },
+        { to: 'ai', label: 'AI Workspace', icon: Sparkles },
         { to: 'settings', label: t('sidebar.settings'), icon: Settings },
     ];
 

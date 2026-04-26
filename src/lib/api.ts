@@ -221,3 +221,34 @@ export const voiceGatewayAPI = {
         api.get(`/projects/${pid}/voice-gateway/push/jobs`, { params }),
     createPushJob: (pid: string, data: any) => api.post(`/projects/${pid}/voice-gateway/push/jobs`, data),
 };
+
+// ── AI (Google Gemini via backend proxy) ─────────────────────
+export const aiAPI = {
+    updateSettings: (
+        pid: string,
+        data: {
+            model?: string;
+            temperature?: number;
+            max_output_tokens?: number;
+            enabled?: boolean;
+        }
+    ) => api.put(`/projects/${pid}/ai/settings`, data),
+    listContextDocs: (pid: string) => api.get(`/projects/${pid}/ai/context-docs`),
+    createContextDoc: (
+        pid: string,
+        data: {
+            source_type: string;
+            source_ref?: string;
+            title: string;
+            body: string;
+            metadata?: Record<string, unknown>;
+        }
+    ) => api.post(`/projects/${pid}/ai/context-docs`, data),
+    chat: (
+        pid: string,
+        data: {
+            message: string;
+            conversation_id?: string;
+        }
+    ) => api.post(`/projects/${pid}/ai/chat`, data),
+};

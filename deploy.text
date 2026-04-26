@@ -1,0 +1,6 @@
+cd ~/apps/matu-db
+git pull
+npm install
+npm run build
+sudo rsync -av --delete dist/ /var/www/matudb/
+sudo systemctl reload nginx

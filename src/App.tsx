@@ -18,6 +18,7 @@ import SqlEditorPage from './pages/project/SqlEditorPage';
 import ApiKeysPage from './pages/project/ApiKeysPage';
 import SettingsPage from './pages/project/SettingsPage';
 import PaymentGatewayPage from './pages/project/PaymentGatewayPage';
+import AIWorkspacePage from './pages/project/AIWorkspacePage';
 import StoragePage from './pages/project/StoragePage';
 import ProjectAuthPage from './pages/project/ProjectAuthPage';
 import ProjectTeamPage from './pages/project/ProjectTeamPage';
@@ -207,6 +208,7 @@ export default function App() {
           <Route path="simulator" element={<SimulatorPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="payments" element={<PaymentGatewayPage />} />
+          <Route path="ai" element={<AIWorkspacePage />} />
         </Route>
         <Route path="/matricula" element={<MatriculaPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
