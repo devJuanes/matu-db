@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
+import toast from 'react-hot-toast';
 
 export default function ProjectLayout() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -49,6 +50,7 @@ export default function ProjectLayout() {
     }, [projectId, navigate]);
 
     const navItems = [
+        { to: 'overview', label: 'Resumen', icon: LayoutDashboard },
         { to: 'editor', label: t('sidebar.editor'), icon: Table2 },
         { to: 'sql', label: t('sidebar.sql'), icon: Terminal },
         { to: 'database', label: t('sidebar.database'), icon: Database },
@@ -58,6 +60,8 @@ export default function ProjectLayout() {
         { to: 'metrics', label: 'Metricas', icon: ChartColumnBig },
         { to: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
         { to: 'apps', label: 'Aplicaciones', icon: Globe },
+        { to: 'usage', label: 'Uso', icon: Activity },
+        { to: 'team', label: 'Equipo', icon: Users },
         { to: 'auth', label: t('sidebar.auth'), icon: Users },
         { to: 'keys', label: t('sidebar.keys'), icon: Key },
         { to: 'notifications', label: 'Notificaciones', icon: MessagesSquare },
@@ -167,13 +171,29 @@ export default function ProjectLayout() {
 
                 {/* Nav */}
                 <nav style={{ flex: 1, padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }} className="custom-scrollbar">
-                    {navItems.map(({ to, label, icon: Icon }) => (
-                        <NavLink key={to} to={`/project/${projectId}/${to}`} style={linkStyle} className="sidebar-link">
+                    {navItems.map(({ to, label, icon: Icon }) => {
+                        const isBlockedByPause = project?.status === 'paused' && !['overview', 'settings'].includes(to);
+                        return (
+                        <NavLink
+                            key={to}
+                            to={`/project/${projectId}/${to}`}
+                            style={(state) => ({
+                                ...linkStyle(state),
+                                opacity: isBlockedByPause ? 0.45 : 1,
+                                cursor: isBlockedByPause ? 'not-allowed' : 'pointer',
+                            })}
+                            className="sidebar-link"
+                            onClick={(e) => {
+                                if (!isBlockedByPause) return;
+                                e.preventDefault();
+                                toast.error('Proyecto pausado: reanuda para habilitar este modulo');
+                            }}
+                        >
                             <Icon size={18} />
                             <span>{label}</span>
                             <ChevronRight size={14} className="link-arrow" />
                         </NavLink>
-                    ))}
+                    )})}
                 </nav>
 
                 {/* Sidebar Footer */}
@@ -246,6 +266,23 @@ export default function ProjectLayout() {
                     {sidebarCollapsed ? <Menu size={18} /> : <PanelLeftClose size={18} />}
                 </button>
                 <div style={{ height: '100%', position: 'relative' }}>
+                    {project?.status === 'paused' && (
+                        <div style={{
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 90,
+                            margin: '56px 12px 0',
+                            padding: '10px 12px',
+                            borderRadius: 12,
+                            border: '1px solid rgba(245,158,11,0.35)',
+                            background: 'rgba(245,158,11,0.12)',
+                            color: '#b45309',
+                            fontSize: 12,
+                            fontWeight: 700
+                        }}>
+                            Proyecto en pausa: solo se permiten vistas de resumen y ajustes hasta reanudar.
+                        </div>
+                    )}
                     {project ? <Outlet context={{ project, setProject }} /> : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                             <div className="spinner-sm" style={{ width: 40, height: 40, border: '4px solid rgba(16, 185, 129, 0.1)', borderTopColor: 'var(--brand)', borderRadius: '50%' }} />

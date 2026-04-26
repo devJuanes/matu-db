@@ -12,6 +12,7 @@ import ProjectUserResetPage from './pages/auth/ProjectUserResetPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import ProjectLayout from './pages/project/ProjectLayout';
+import ProjectOverviewPage from './pages/project/ProjectOverviewPage';
 import TableEditorPage from './pages/project/TableEditorPage';
 import SqlEditorPage from './pages/project/SqlEditorPage';
 import ApiKeysPage from './pages/project/ApiKeysPage';
@@ -19,6 +20,8 @@ import SettingsPage from './pages/project/SettingsPage';
 import PaymentGatewayPage from './pages/project/PaymentGatewayPage';
 import StoragePage from './pages/project/StoragePage';
 import ProjectAuthPage from './pages/project/ProjectAuthPage';
+import ProjectTeamPage from './pages/project/ProjectTeamPage';
+import ProjectUsagePage from './pages/project/ProjectUsagePage';
 import DatabasePage from './pages/project/DatabasePage';
 import AppDeployPage from './pages/project/AppDeployPage';
 import TemplatesPage from './pages/project/TemplatesPage';
@@ -181,13 +184,16 @@ export default function App() {
         <Route path="/auth/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/project/:projectId" element={<ProtectedRoute><ProjectLayout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="editor" replace />} />
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<ProjectOverviewPage />} />
           <Route path="editor" element={<TableEditorPage />} />
           <Route path="database" element={<DatabasePage />} />
           <Route path="sql" element={<SqlEditorPage />} />
           <Route path="storage" element={<StoragePage />} />
           <Route path="auth" element={<ProjectAuthPage />} />
           <Route path="apps" element={<AppDeployPage />} />
+          <Route path="team" element={<ProjectTeamPage />} />
+          <Route path="usage" element={<ProjectUsagePage />} />
           <Route path="automations" element={<AutomationsList />} />
           <Route path="automations/:automationId" element={<AutomationEditor />} />
           <Route path="robots" element={<RobotsOfficePage />} />

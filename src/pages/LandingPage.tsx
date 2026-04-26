@@ -80,24 +80,6 @@ export default function LandingPage() {
                 overflow: 'hidden'
             }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        padding: '10px 16px',
-                        borderRadius: 999,
-                        background: 'rgba(16, 185, 129, 0.1)',
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: 'var(--brand)',
-                        margin: '0 auto 28px',
-                        border: '1px solid rgba(16, 185, 129, 0.25)',
-                        width: 'fit-content'
-                    }}>
-                        <Rocket size={14} /> Nuevo: onboarding para equipos y plantillas de arranque
-                    </div>
-
                     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 28, alignItems: 'center' }} className="landing-hero-grid">
                         <div style={{ textAlign: 'left' }}>
                             <h1 style={{

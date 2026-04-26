@@ -324,6 +324,11 @@ export default function TableEditorPage() {
     const [openTabsHydrated, setOpenTabsHydrated] = useState(false);
     const [limit, setLimit] = useState(50);
     const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
+    const [showAddColumn, setShowAddColumn] = useState(false);
+    const [newColumnName, setNewColumnName] = useState('');
+    const [newColumnType, setNewColumnType] = useState('text');
+    const [newColumnNullable, setNewColumnNullable] = useState(true);
+    const [addingColumn, setAddingColumn] = useState(false);
     const dataRequestId = useRef(0);
     const colWidthsRef = useRef<Record<string, number>>({});
     const [colWidthsVersion, bumpColWidths] = useState(0);
@@ -588,6 +593,34 @@ export default function TableEditorPage() {
 
     const filteredTables = tables.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
+    const handleAddColumn = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!projectId || !selectedTable) return;
+        if (!newColumnName.trim()) {
+            toast.error('Escribe un nombre de columna');
+            return;
+        }
+        setAddingColumn(true);
+        try {
+            await tablesAPI.addColumn(projectId, selectedTable, {
+                name: newColumnName.trim(),
+                type: newColumnType,
+                nullable: newColumnNullable,
+            });
+            toast.success(`Columna "${newColumnName.trim()}" creada`);
+            setShowAddColumn(false);
+            setNewColumnName('');
+            setNewColumnType('text');
+            setNewColumnNullable(true);
+            await selectTable(selectedTable);
+            loadTables();
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'No se pudo crear la columna');
+        } finally {
+            setAddingColumn(false);
+        }
+    };
+
     return (
         <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: 'var(--bg-main)' }}>
             {/* Nav Sidebar - Table Map */}
@@ -791,6 +824,9 @@ export default function TableEditorPage() {
                                 <button type="button" className="btn btn-ghost" onClick={() => void loadPage(page)} style={{ height: 40, width: 40, padding: 0, justifyContent: 'center' }} title="Refrescar página actual">
                                     <RefreshCw size={18} className={loading ? 'spinner' : ''} color="var(--text-secondary)" />
                                 </button>
+                                <button className="btn btn-ghost" style={{ height: 40, padding: '0 14px', gap: 8, fontWeight: 700 }} onClick={() => setShowAddColumn(true)}>
+                                    <Plus size={16} /> Columna
+                                </button>
                                 <button className="btn btn-ghost" style={{ height: 40, width: 40, padding: 0, justifyContent: 'center' }}>
                                     <Settings2 size={18} color="var(--text-secondary)" />
                                 </button>
@@ -953,6 +989,41 @@ export default function TableEditorPage() {
             </div>
 
             {showCreate && <CreateTableModal projectId={projectId!} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); loadTables(); }} />}
+            {showAddColumn && selectedTable && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(15, 23, 42, 0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+                    <div className="card" style={{ width: '92%', maxWidth: 480, padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Nueva columna</h3>
+                                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>Tabla: {selectedTable}</p>
+                            </div>
+                            <button className="btn btn-ghost btn-icon" onClick={() => setShowAddColumn(false)}><X size={18} /></button>
+                        </div>
+                        <form onSubmit={handleAddColumn} style={{ padding: 18, display: 'grid', gap: 12 }}>
+                            <div className="form-group">
+                                <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>Nombre</label>
+                                <input className="input" value={newColumnName} onChange={(e) => setNewColumnName(e.target.value)} placeholder="ej: email" style={{ height: 40 }} />
+                            </div>
+                            <div className="form-group">
+                                <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>Tipo</label>
+                                <select className="input" value={newColumnType} onChange={(e) => setNewColumnType(e.target.value)} style={{ height: 40, padding: '0 10px' }}>
+                                    {PG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                            </div>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+                                <input type="checkbox" checked={newColumnNullable} onChange={(e) => setNewColumnNullable(e.target.checked)} />
+                                Permitir NULL
+                            </label>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 6 }}>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowAddColumn(false)} style={{ height: 36 }}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" disabled={addingColumn} style={{ height: 36, padding: '0 14px', fontWeight: 700 }}>
+                                    {addingColumn ? 'Creando...' : 'Crear columna'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 .matudb-cell-ellipsis {

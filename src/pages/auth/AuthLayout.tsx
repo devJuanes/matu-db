@@ -60,23 +60,7 @@ export default function AuthLayout({ children, mode }: AuthLayoutProps) {
                     flex: 1
                 }}>
                     <div style={{ marginBottom: 44 }}>
-                        <div style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            padding: '6px 14px',
-                            borderRadius: 12,
-                            background: 'rgba(16, 185, 129, 0.08)',
-                            color: 'var(--brand)',
-                            fontSize: 13,
-                            fontWeight: 700,
-                            marginBottom: 20,
-                            border: '1px solid rgba(16, 185, 129, 0.15)'
-                        }}>
-                            <Sparkles size={14} />
-                            {mode === 'login' ? 'Bienvenido de nuevo' : 'Plataforma de Datos v4'}
-                        </div>
-                        <h1 style={{ fontSize: 40, fontWeight: 900, marginBottom: 16, letterSpacing: '-2px', color: 'var(--text-primary)' }}>
+                                            <h1 style={{ fontSize: 40, fontWeight: 900, marginBottom: 16, letterSpacing: '-2px', color: 'var(--text-primary)' }}>
                             {mode === 'login' ? t('auth.login.title') : t('auth.register.title')}
                         </h1>
                         <p style={{ color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1.6, fontWeight: 500 }}>

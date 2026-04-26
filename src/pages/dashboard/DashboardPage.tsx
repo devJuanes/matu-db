@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { projectsAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -29,7 +29,9 @@ import {
     Settings,
     Bell,
     Box,
-    Copy
+    Copy,
+    Pin,
+    PinOff
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import logo from '../../assets/logo.png';
@@ -146,16 +148,68 @@ export default function DashboardPage() {
     const { t } = useTranslation();
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [showNew, setShowNew] = useState(false);
     const [newKeys, setNewKeys] = useState<any>(null);
     const [search, setSearch] = useState('');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+        const storedView = localStorage.getItem('matu.dashboard.viewMode');
+        return storedView === 'list' ? 'list' : 'grid';
+    });
+    const [pinnedProjectIds, setPinnedProjectIds] = useState<string[]>([]);
+
+    const pinnedStorageKey = `matu.dashboard.pinned.${user?.email ?? 'anonymous'}`;
 
     useEffect(() => {
         loadProjects();
     }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const inviteToken = params.get('invite_token');
+        if (!inviteToken) return;
+
+        projectsAPI.acceptInvitation(inviteToken)
+            .then((res) => {
+                toast.success('Invitacion aceptada');
+                const projectId = res.data?.data?.project_id;
+                if (projectId) navigate(`/project/${projectId}/team`);
+                else navigate('/dashboard', { replace: true });
+            })
+            .catch((err) => {
+                toast.error(err.response?.data?.message || 'No se pudo aceptar la invitacion');
+                navigate('/dashboard', { replace: true });
+            });
+    }, [location.search, navigate]);
+
+    useEffect(() => {
+        localStorage.setItem('matu.dashboard.viewMode', viewMode);
+    }, [viewMode]);
+
+    useEffect(() => {
+        const storedPinned = localStorage.getItem(pinnedStorageKey);
+        if (!storedPinned) {
+            setPinnedProjectIds([]);
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(storedPinned);
+            if (Array.isArray(parsed)) {
+                setPinnedProjectIds(parsed.slice(0, 3));
+            } else {
+                setPinnedProjectIds([]);
+            }
+        } catch {
+            setPinnedProjectIds([]);
+        }
+    }, [pinnedStorageKey]);
+
+    useEffect(() => {
+        localStorage.setItem(pinnedStorageKey, JSON.stringify(pinnedProjectIds.slice(0, 3)));
+    }, [pinnedProjectIds, pinnedStorageKey]);
 
     const loadProjects = () => {
         setLoading(true);
@@ -171,10 +225,31 @@ export default function DashboardPage() {
         try {
             await projectsAPI.delete(id);
             setProjects(p => p.filter(x => x.id !== id));
+            setPinnedProjectIds((prev) => prev.filter((projectId) => projectId !== id));
             toast.success('Servidor purgado correctamente');
         } catch (err: any) {
             toast.error('Error al intentar purgar el servidor');
         }
+    };
+
+    const handleTogglePin = (projectId: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        setPinnedProjectIds((currentPinned) => {
+            if (currentPinned.includes(projectId)) {
+                toast.success('Proyecto desfijado');
+                return currentPinned.filter((id) => id !== projectId);
+            }
+
+            if (currentPinned.length >= 3) {
+                toast.error('Solo puedes fijar hasta 3 proyectos');
+                return currentPinned;
+            }
+
+            toast.success('Proyecto fijado');
+            return [...currentPinned, projectId];
+        });
     };
 
     const handleCreated = (project: Project, keys: any) => {
@@ -187,6 +262,18 @@ export default function DashboardPage() {
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.description?.toLowerCase().includes(search.toLowerCase())
     );
+
+    const orderedProjects = [...filteredProjects].sort((a, b) => {
+        const pinIndexA = pinnedProjectIds.indexOf(a.id);
+        const pinIndexB = pinnedProjectIds.indexOf(b.id);
+        const isPinnedA = pinIndexA !== -1;
+        const isPinnedB = pinIndexB !== -1;
+
+        if (isPinnedA && isPinnedB) return pinIndexA - pinIndexB;
+        if (isPinnedA) return -1;
+        if (isPinnedB) return 1;
+        return 0;
+    });
 
     return (
         <div style={{
@@ -254,31 +341,31 @@ export default function DashboardPage() {
             </header>
 
             {/* Main Workspace */}
-            <main style={{ flex: 1, padding: '60px 40px', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
+            <main style={{ flex: 1, padding: '44px 32px', maxWidth: '1380px', margin: '0 auto', width: '100%' }}>
 
                 {/* Orchestrator Header */}
-                <div style={{ marginBottom: 56, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 32 }}>
+                <div style={{ marginBottom: 42, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24 }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--brand)', fontSize: 11, fontWeight: 900, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '2px' }}>
                             <Box size={14} /> Control de Infraestructura
                         </div>
-                        <h1 style={{ fontSize: 48, fontWeight: 900, letterSpacing: '-2px', margin: 0, color: 'var(--text-primary)' }}>Mis Sistemas</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 18, marginTop: 12, maxWidth: 600 }}>Tus instancias de base de datos, microservicios y flujos de automatización centralizados.</p>
+                        <h1 style={{ fontSize: 42, fontWeight: 900, letterSpacing: '-1.6px', margin: 0, color: 'var(--text-primary)' }}>Mis Sistemas</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 16, marginTop: 10, maxWidth: 560 }}>Tus instancias de base de datos, microservicios y flujos de automatización centralizados.</p>
                     </div>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'flex-end', paddingTop: 8 }}>
-                        <div style={{ position: 'relative', width: 320 }}>
+                        <div style={{ position: 'relative', width: 300 }}>
                             <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                             <input
                                 className="input"
                                 placeholder="Filtrar por nombre o ID..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                style={{ height: 52, paddingLeft: 48, borderRadius: 16, background: 'var(--bg-surface)', fontSize: 15 }}
+                                style={{ height: 46, paddingLeft: 44, borderRadius: 14, background: 'var(--bg-surface)', fontSize: 14 }}
                             />
                         </div>
-                        <button className="btn btn-primary" onClick={() => setShowNew(true)} style={{ height: 52, padding: '0 28px', fontWeight: 800, gap: 12, borderRadius: 16, boxShadow: '0 12px 24px rgba(16, 185, 129, 0.25)' }}>
-                            <Plus size={22} /> Nueva Instancia
+                        <button className="btn btn-primary" onClick={() => setShowNew(true)} style={{ height: 46, padding: '0 22px', fontWeight: 800, gap: 10, borderRadius: 14, boxShadow: '0 10px 20px rgba(16, 185, 129, 0.22)' }}>
+                            <Plus size={18} /> Nueva Instancia
                         </button>
                     </div>
                 </div>
@@ -307,7 +394,7 @@ export default function DashboardPage() {
                             </button>
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
-                            {projects.length} INSTANCIAS DISPONIBLES
+                            {projects.length} INSTANCIAS DISPONIBLES · {pinnedProjectIds.length}/3 FIJADAS
                         </div>
                     </div>
 
@@ -359,44 +446,63 @@ export default function DashboardPage() {
                     </div>
                 ) : (
                     viewMode === 'grid' ? (
-                        <div style={{ display: 'grid', gap: 32, gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))' }}>
-                            {filteredProjects.map(p => (
-                                <Link to={`/project/${p.id}/editor`} key={p.id} style={{ textDecoration: 'none', display: 'block' }}>
+                        <div style={{ display: 'grid', gap: 22, gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+                            {orderedProjects.map(p => {
+                                const isPinned = pinnedProjectIds.includes(p.id);
+                                return (
+                                <Link to={`/project/${p.id}`} key={p.id} style={{ textDecoration: 'none', display: 'block' }}>
                                     <div className="project-grid-card" style={{
-                                        padding: '32px',
+                                        padding: '22px',
                                         background: 'var(--bg-surface)',
                                         border: '1px solid var(--border)',
-                                        borderRadius: 28,
+                                        borderRadius: 22,
                                         transition: 'all 0.4s cubic-bezier(0.19, 1, 0.22, 1)',
                                         position: 'relative',
                                         overflow: 'hidden'
                                     }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                                             <div style={{
-                                                width: 56, height: 56, borderRadius: 18, background: 'var(--bg-base)',
+                                                width: 48, height: 48, borderRadius: 14, background: 'var(--bg-base)',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)',
                                                 border: '1px solid var(--border)',
                                                 boxShadow: '0 10px 20px rgba(0,0,0,0.05)'
                                             }}>
-                                                <Database size={28} />
+                                                <Database size={22} />
                                             </div>
-                                            <button
-                                                className="btn btn-ghost"
-                                                onClick={(e) => handleDelete(p.id, e)}
-                                                style={{ height: 36, width: 36, padding: 0, justifyContent: 'center', borderRadius: 10, color: 'var(--text-muted)', background: 'transparent' }}
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <button
+                                                    className="btn btn-ghost"
+                                                    onClick={(e) => handleTogglePin(p.id, e)}
+                                                    title={isPinned ? 'Desfijar proyecto' : 'Fijar proyecto'}
+                                                    style={{ height: 34, width: 34, padding: 0, justifyContent: 'center', borderRadius: 10, color: isPinned ? 'var(--brand)' : 'var(--text-muted)', background: 'transparent' }}
+                                                >
+                                                    {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
+                                                </button>
+                                                <button
+                                                    className="btn btn-ghost"
+                                                    onClick={(e) => handleDelete(p.id, e)}
+                                                    style={{ height: 34, width: 34, padding: 0, justifyContent: 'center', borderRadius: 10, color: 'var(--text-muted)', background: 'transparent' }}
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <div style={{ marginBottom: 32 }}>
-                                            <h3 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 10px', letterSpacing: '-0.8px' }}>{p.name}</h3>
-                                            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, height: 42, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                        <div style={{ marginBottom: 24 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                                <h3 style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.6px' }}>{p.name}</h3>
+                                                {isPinned && (
+                                                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.6px', color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 999, padding: '4px 8px' }}>
+                                                        FIJADO
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, minHeight: 36, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                 {p.description || 'Instancia activa de MatuDB Engine. Lista para operaciones SQL y flujos reactivos.'}
                                             </p>
                                         </div>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 800, color: 'var(--brand)', background: 'rgba(16, 185, 129, 0.08)', padding: '6px 14px', borderRadius: 10 }}>
                                                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand)', boxShadow: '0 0 8px var(--brand)' }} />
                                                 ONLINE
@@ -406,7 +512,7 @@ export default function DashboardPage() {
                                             </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 24, borderTop: '1px solid var(--border)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid var(--border)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--brand)', opacity: 0.6 }} title="DB Ready" />
                                                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--brand)', opacity: 0.6 }} title="Auth Ready" />
@@ -414,8 +520,8 @@ export default function DashboardPage() {
                                             </div>
                                             <div style={{
                                                 display: 'flex', alignItems: 'center', gap: 8,
-                                                fontSize: 14, fontWeight: 800, color: 'var(--text-primary)',
-                                                background: 'var(--bg-base)', padding: '8px 16px', borderRadius: 12,
+                                                fontSize: 13, fontWeight: 800, color: 'var(--text-primary)',
+                                                background: 'var(--bg-base)', padding: '7px 14px', borderRadius: 11,
                                                 border: '1px solid var(--border)',
                                                 transition: 'all 0.2s'
                                             }} className="open-project-badge">
@@ -424,7 +530,7 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
                                 </Link>
-                            ))}
+                            )})}
                         </div>
                     ) : (
                         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 28, overflow: 'hidden' }}>
@@ -438,10 +544,12 @@ export default function DashboardPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredProjects.map(p => (
+                                    {orderedProjects.map(p => {
+                                        const isPinned = pinnedProjectIds.includes(p.id);
+                                        return (
                                         <tr
                                             key={p.id}
-                                            onClick={() => navigate(`/project/${p.id}/editor`)}
+                                            onClick={() => navigate(`/project/${p.id}`)}
                                             style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.2s' }}
                                             className="dashboard-table-row"
                                         >
@@ -451,7 +559,10 @@ export default function DashboardPage() {
                                                         <Database size={20} />
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>{p.name}</div>
+                                                        <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                            {p.name}
+                                                            {isPinned && <Pin size={13} color="var(--brand)" />}
+                                                        </div>
                                                         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>UID: {p.id.slice(0, 8)}...</div>
                                                     </div>
                                                 </div>
@@ -469,12 +580,17 @@ export default function DashboardPage() {
                                                 </div>
                                             </td>
                                             <td style={{ padding: '24px 32px', textAlign: 'right' }}>
-                                                <button className="btn btn-ghost" style={{ width: 40, height: 40, padding: 0 }}>
-                                                    <MoreVertical size={18} />
-                                                </button>
+                                                <div style={{ display: 'inline-flex', gap: 8 }}>
+                                                    <button className="btn btn-ghost" style={{ width: 36, height: 36, padding: 0 }} onClick={(e) => handleTogglePin(p.id, e)} title={isPinned ? 'Desfijar proyecto' : 'Fijar proyecto'}>
+                                                        {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                                                    </button>
+                                                    <button className="btn btn-ghost" style={{ width: 36, height: 36, padding: 0 }} onClick={(e) => handleDelete(p.id, e)}>
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )})}
                                 </tbody>
                             </table>
                         </div>

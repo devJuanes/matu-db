@@ -53,6 +53,17 @@ export const projectsAPI = {
     create: (data: any) => api.post('/projects', data),
     get: (id: string) => api.get(`/projects/${id}`),
     update: (id: string, data: any) => api.put(`/projects/${id}`, data),
+    pause: (id: string) => api.post(`/projects/${id}/pause`),
+    resume: (id: string) => api.post(`/projects/${id}/resume`),
+    exportBackup: (id: string, format: 'sql' | 'json' = 'sql') =>
+        api.get(`/projects/${id}/backup/export`, { params: { format }, responseType: 'blob' }),
+    getTeam: (id: string) => api.get(`/projects/${id}/team`),
+    inviteMember: (id: string, data: { email: string; role: 'admin' | 'editor' | 'viewer' }) =>
+        api.post(`/projects/${id}/team/invitations`, data),
+    cancelInvitation: (id: string, invitationId: string) =>
+        api.post(`/projects/${id}/team/invitations/${invitationId}/cancel`),
+    acceptInvitation: (token: string) =>
+        api.post('/projects/team/invitations/accept', { token }),
     delete: (id: string) => api.delete(`/projects/${id}`),
 };
 
