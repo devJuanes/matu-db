@@ -110,7 +110,7 @@ export default function ProjectAuthPage() {
                 `Dry-run OK\n\n` +
                 `- Filas totales: ${drySummary?.total_rows || 0}\n` +
                 `- Importables: ${drySummary?.imported || 0}\n` +
-                `- Sin cédula: ${drySummary?.skipped_no_cedula || 0}\n` +
+                `- Sin clave/cédula: ${drySummary?.skipped_no_password || 0}\n` +
                 `- Sin match por correo: ${drySummary?.skipped_no_match || 0}\n\n` +
                 `¿Quieres ejecutar la importación REAL ahora?`
             );
@@ -286,7 +286,7 @@ const { data } = await res.json();
                             <strong style={{ color: 'var(--text-primary)' }}>Última importación:</strong>
                             <span>Filas: {lastImportSummary.total_rows || 0}</span>
                             <span>Importados: {lastImportSummary.imported || 0}</span>
-                            <span>Sin cédula: {lastImportSummary.skipped_no_cedula || 0}</span>
+                            <span>Sin clave/cédula: {lastImportSummary.skipped_no_password || 0}</span>
                             <span>Sin match: {lastImportSummary.skipped_no_match || 0}</span>
                             <span>Modo: {lastImportSummary.dryRun ? 'Dry-run' : 'Real'}</span>
                         </div>
