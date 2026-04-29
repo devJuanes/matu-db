@@ -37,6 +37,14 @@ export const authAPI = {
     forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
     resetPassword: (token: string, password: string) => api.post('/auth/reset-password', { token, password }),
     recoverUserPassword: (pid: string, uid: string) => api.post(`/projects/${pid}/auth/users/${uid}/recover`),
+    importUsersFromExcel: (pid: string, file: File, dryRun = true) => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('dryRun', String(dryRun));
+        return api.post(`/projects/${pid}/auth/users/import-excel`, form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
 };
 
 /** Recuperación de usuarios finales del proyecto (sin apikey en el navegador) */

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api, { authAPI } from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -17,6 +17,9 @@ export default function ProjectAuthPage() {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [importing, setImporting] = useState(false);
+    const [lastImportSummary, setLastImportSummary] = useState<any | null>(null);
+    const excelInputRef = useRef<HTMLInputElement | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -87,6 +90,41 @@ export default function ProjectAuthPage() {
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         toast.success('Copiado');
+    };
+
+    const runExcelImport = async (file: File, dryRun: boolean) => {
+        const res = await authAPI.importUsersFromExcel(projectId!, file, dryRun);
+        const summary = res.data?.data || null;
+        setLastImportSummary(summary);
+        return summary;
+    };
+
+    const handleExcelImportChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !projectId) return;
+        try {
+            setImporting(true);
+            const drySummary = await runExcelImport(file, true);
+            toast.success(`Validación lista: ${drySummary?.imported || 0} usuarios para importar`);
+            const shouldApply = window.confirm(
+                `Dry-run OK\n\n` +
+                `- Filas totales: ${drySummary?.total_rows || 0}\n` +
+                `- Importables: ${drySummary?.imported || 0}\n` +
+                `- Sin cédula: ${drySummary?.skipped_no_cedula || 0}\n` +
+                `- Sin match por correo: ${drySummary?.skipped_no_match || 0}\n\n` +
+                `¿Quieres ejecutar la importación REAL ahora?`
+            );
+            if (!shouldApply) return;
+
+            const finalSummary = await runExcelImport(file, false);
+            toast.success(`Importación completada: ${finalSummary?.imported || 0} usuarios`);
+            await load();
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error importando Excel');
+        } finally {
+            if (excelInputRef.current) excelInputRef.current.value = '';
+            setImporting(false);
+        }
     };
 
     /* ── Snippets ─────────────────────────────────────────── */
@@ -164,11 +202,27 @@ const { data } = await res.json();
                     <button className="btn btn-outline" style={{ height: 44, padding: '0 20px', gap: 10 }} onClick={load}>
                         <RefreshCw size={16} className={loading ? 'spinner' : ''} /> Refrescar
                     </button>
+                    <button
+                        className="btn btn-outline"
+                        style={{ height: 44, padding: '0 20px', gap: 10 }}
+                        onClick={() => excelInputRef.current?.click()}
+                        disabled={importing}
+                    >
+                        {importing ? <span className="spinner spinner-sm" /> : <Terminal size={16} />}
+                        Importar Excel
+                    </button>
                     <button className="btn btn-primary" style={{ height: 44, padding: '0 20px', gap: 10 }}>
                         <UserPlus size={16} /> Nuevo Usuario
                     </button>
                 </div>
             </div>
+            <input
+                ref={excelInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleExcelImportChange}
+                style={{ display: 'none' }}
+            />
 
             {/* Navigation Tabs */}
             <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 32, position: 'relative' }}>
@@ -213,6 +267,30 @@ const { data } = await res.json();
                             </div>
                         )}
                     </div>
+
+                    {lastImportSummary && (
+                        <div
+                            style={{
+                                marginBottom: 18,
+                                padding: '12px 14px',
+                                borderRadius: 12,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg-surface)',
+                                fontSize: 12,
+                                color: 'var(--text-secondary)',
+                                display: 'flex',
+                                gap: 14,
+                                flexWrap: 'wrap',
+                            }}
+                        >
+                            <strong style={{ color: 'var(--text-primary)' }}>Última importación:</strong>
+                            <span>Filas: {lastImportSummary.total_rows || 0}</span>
+                            <span>Importados: {lastImportSummary.imported || 0}</span>
+                            <span>Sin cédula: {lastImportSummary.skipped_no_cedula || 0}</span>
+                            <span>Sin match: {lastImportSummary.skipped_no_match || 0}</span>
+                            <span>Modo: {lastImportSummary.dryRun ? 'Dry-run' : 'Real'}</span>
+                        </div>
+                    )}
 
                     {/* Table View */}
                     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
